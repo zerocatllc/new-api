@@ -16,19 +16,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-/**
- * Application-wide constants
- */
+import { expect, test } from 'vitest'
 
-// System Configuration Defaults
-// PUBLIC_SITE_NAME (frontend env file or the build environment) brands a
-// deployment at build time; /api/status system_name still wins at runtime.
-export const DEFAULT_SYSTEM_NAME = import.meta.env.PUBLIC_SITE_NAME || 'ZeroCat'
-export const DEFAULT_LOGO = '/zerocat-logo.svg'
+import { mapStatusDataToConfig } from '@/lib/status-query'
 
-// LocalStorage Keys
-export const STORAGE_KEYS = {
-  SYSTEM_NAME: 'system_name',
-  LOGO: 'logo',
-  FOOTER_HTML: 'footer_html',
-} as const
+test('uses the current brand mark when status returns the legacy ZeroCat logo', () => {
+  const config = mapStatusDataToConfig({
+    system_name: 'ZeroCat',
+    logo: 'https://zero.cat/zero-cat-logo-loop.webp',
+  })
+
+  expect(config.logo).toBe('/zerocat-logo.svg')
+  expect(config.systemName).toBe('ZeroCat')
+})
+
+test('preserves an administrator-supplied custom logo', () => {
+  const config = mapStatusDataToConfig({
+    logo: 'https://assets.example.com/company.svg',
+  })
+
+  expect(config.logo).toBe('https://assets.example.com/company.svg')
+})

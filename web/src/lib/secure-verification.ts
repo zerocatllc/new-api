@@ -16,12 +16,49 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import axios from 'axios'
+import axios, { type AxiosError } from 'axios'
 
 import {
   getServerErrorMessageKey,
   safeServerErrorMessage,
 } from './server-error-message'
+
+export interface VerificationRequiredInfo {
+  code?: string
+  message: string
+  required: boolean
+}
+
+export function isVerificationRequiredError(
+  error: unknown
+): error is AxiosError {
+  if (!error || typeof error !== 'object') return false
+  const axiosError = error as AxiosError<{ code?: string }>
+  if (axiosError.response?.status !== 403) return false
+  const code = axiosError.response?.data?.code
+  return new Set([
+    'VERIFICATION_REQUIRED',
+    'VERIFICATION_EXPIRED',
+    'VERIFICATION_INVALID',
+    'SECURITY_PROOF_REQUIRED',
+    'SECURITY_PROOF_EXPIRED',
+    'SECURITY_PROOF_INVALID',
+    'SECURITY_PROOF_SCOPE_MISMATCH',
+    'SECURITY_PROOF_METHOD_MISMATCH',
+  ]).has(code ?? '')
+}
+
+export function extractVerificationInfo(
+  error: unknown
+): VerificationRequiredInfo {
+  const axiosError = error as AxiosError<{ code?: string; message?: string }>
+  return {
+    code: axiosError.response?.data?.code,
+    message:
+      axiosError.response?.data?.message ?? 'Secure verification is required',
+    required: true,
+  }
+}
 
 export class AuthOperationError extends Error {
   readonly [safeServerErrorMessage] = true

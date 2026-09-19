@@ -30,6 +30,8 @@ import {
   CONTENT_LAYOUT_VALUES,
   type ContentLayout,
   DEFAULT_THEME_CUSTOMIZATION,
+  isHexColor,
+  readableForeground,
   resolveThemeFont,
   THEME_COOKIE_KEYS,
   THEME_FONT_VALUES,
@@ -73,6 +75,7 @@ type ThemeCustomizationContextType = {
   setRadius: (radius: ThemeRadius) => void
   setScale: (scale: ThemeScale) => void
   setContentLayout: (contentLayout: ContentLayout) => void
+  setCustomColor: (color: string) => void
   resetCustomization: () => void
 }
 
@@ -88,6 +91,7 @@ const FALLBACK_CONTEXT: ThemeCustomizationContextType = {
   setRadius: () => {},
   setScale: () => {},
   setContentLayout: () => {},
+  setCustomColor: () => {},
   resetCustomization: () => {},
 }
 
@@ -132,6 +136,14 @@ export function ThemeCustomizationProvider(props: {
       DEFAULT_THEME_CUSTOMIZATION.contentLayout
     )
   )
+  // `customColor` is free-form hex, not an enum, so it's validated with
+  // `isHexColor` rather than a value Set.
+  const [customColor, _setCustomColor] = useState<string>(() => {
+    const stored = getCookie(THEME_COOKIE_KEYS.customColor)
+    return stored && isHexColor(stored)
+      ? stored
+      : DEFAULT_THEME_CUSTOMIZATION.customColor
+  })
 
   // Mirror state to the <body> via data-* attributes so theme-presets.css can
   // override CSS variables at the right cascade layer.
@@ -169,6 +181,39 @@ export function ThemeCustomizationProvider(props: {
   useEffect(() => {
     applyAttribute('data-theme-content-layout', contentLayout)
   }, [contentLayout])
+
+  // The `custom` preset has no static CSS block — its accent is chosen at
+  // runtime. Inject `--primary` (and the few tokens that should track it)
+  // inline on <body>; the semantic surface bridge in theme-presets.css then
+  // derives cards/borders/sidebar from it automatically. Switching to any
+  // other preset clears these inline overrides so its own (or :root's) values
+  // win again.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const body = document.body
+    if (!body) return
+    const injected = [
+      '--primary',
+      '--primary-foreground',
+      '--ring',
+      '--chart-1',
+      '--sidebar-primary',
+      '--sidebar-primary-foreground',
+      '--sidebar-ring',
+    ]
+    if (preset !== 'custom') {
+      for (const prop of injected) body.style.removeProperty(prop)
+      return
+    }
+    const fg = readableForeground(customColor)
+    body.style.setProperty('--primary', customColor)
+    body.style.setProperty('--primary-foreground', fg)
+    body.style.setProperty('--ring', customColor)
+    body.style.setProperty('--chart-1', customColor)
+    body.style.setProperty('--sidebar-primary', customColor)
+    body.style.setProperty('--sidebar-primary-foreground', fg)
+    body.style.setProperty('--sidebar-ring', customColor)
+  }, [preset, customColor])
 
   const setPreset = useCallback((value: ThemePreset) => {
     _setPreset(value)
@@ -215,23 +260,49 @@ export function ThemeCustomizationProvider(props: {
     }
   }, [])
 
+  const setCustomColor = useCallback((value: string) => {
+    if (!isHexColor(value)) return
+    _setCustomColor(value)
+    if (value === DEFAULT_THEME_CUSTOMIZATION.customColor) {
+      removeCookie(THEME_COOKIE_KEYS.customColor)
+    } else {
+      setCookie(THEME_COOKIE_KEYS.customColor, value, COOKIE_MAX_AGE)
+    }
+  }, [])
+
   const resetCustomization = useCallback(() => {
     setPreset(DEFAULT_THEME_CUSTOMIZATION.preset)
     setFont(DEFAULT_THEME_CUSTOMIZATION.font)
     setRadius(DEFAULT_THEME_CUSTOMIZATION.radius)
     setScale(DEFAULT_THEME_CUSTOMIZATION.scale)
     setContentLayout(DEFAULT_THEME_CUSTOMIZATION.contentLayout)
-  }, [setPreset, setFont, setRadius, setScale, setContentLayout])
+    setCustomColor(DEFAULT_THEME_CUSTOMIZATION.customColor)
+  }, [
+    setPreset,
+    setFont,
+    setRadius,
+    setScale,
+    setContentLayout,
+    setCustomColor,
+  ])
 
   const value = useMemo<ThemeCustomizationContextType>(
     () => ({
       defaults: DEFAULT_THEME_CUSTOMIZATION,
-      customization: { preset, font, radius, scale, contentLayout },
+      customization: {
+        preset,
+        font,
+        radius,
+        scale,
+        contentLayout,
+        customColor,
+      },
       setPreset,
       setFont,
       setRadius,
       setScale,
       setContentLayout,
+      setCustomColor,
       resetCustomization,
     }),
     [
@@ -240,11 +311,13 @@ export function ThemeCustomizationProvider(props: {
       radius,
       scale,
       contentLayout,
+      customColor,
       setPreset,
       setFont,
       setRadius,
       setScale,
       setContentLayout,
+      setCustomColor,
       resetCustomization,
     ]
   )

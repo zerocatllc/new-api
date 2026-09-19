@@ -21,16 +21,14 @@ import {
   Box,
   ClipboardList,
   CreditCard,
-  FileText,
   FlaskConical,
   Key,
   LayoutDashboard,
-  ListTodo,
   MessageSquare,
   PlugZap,
   Radio,
   ServerCog,
-  Settings,
+  ScrollText,
   ShieldCheck,
   Ticket,
   User,
@@ -39,7 +37,13 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { getSystemSettingsNavGroups } from '@/components/layout/config/system-settings.config'
 import type { SidebarData } from '@/components/layout/types'
+import {
+  useTicketBadges,
+  extSupportTicketsItems,
+  extTicketManagementItems,
+} from '@/ext/sidebar'
 import { ROLE } from '@/lib/roles'
 
 /**
@@ -50,6 +54,7 @@ import { ROLE } from '@/lib/roles'
  */
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
+  const { myTicketBadge, adminTicketBadge, canReadTickets } = useTicketBadges()
 
   return {
     navGroups: [
@@ -70,18 +75,19 @@ export function useSidebarData(): SidebarData {
         ],
       },
       {
-        id: 'general',
-        title: t('General'),
+        id: 'build-and-usage',
+        title: t('Build & Usage'),
         items: [
           {
-            title: t('Overview'),
-            url: '/dashboard/overview',
-            icon: Activity,
+            title: t('Workspace'),
+            url: '/dashboard',
+            activeUrls: ['/dashboard/overview'],
+            icon: LayoutDashboard,
           },
           {
             title: t('Dashboard'),
             url: '/dashboard/models',
-            icon: LayoutDashboard,
+            icon: Activity,
           },
           {
             title: t('API Keys'),
@@ -89,33 +95,43 @@ export function useSidebarData(): SidebarData {
             icon: Key,
           },
           {
-            title: t('Usage Logs'),
+            title: t('Logs'),
             url: '/usage-logs/common',
-            icon: FileText,
+            activeUrls: [
+              '/usage-logs/common',
+              '/usage-logs/task',
+              '/usage-logs/drawing',
+            ],
+            configUrls: [
+              '/usage-logs/common',
+              '/usage-logs/task',
+              '/usage-logs/drawing',
+            ],
+            icon: ScrollText,
           },
           {
             title: t('Audit Logs'),
             url: '/usage-logs/audit',
             icon: ClipboardList,
           },
-          {
-            title: t('Task Logs'),
-            url: '/usage-logs/task',
-            activeUrls: ['/usage-logs/drawing'],
-            configUrls: ['/usage-logs/drawing', '/usage-logs/task'],
-            icon: ListTodo,
-          },
         ],
       },
       {
-        id: 'personal',
-        title: t('Personal'),
+        id: 'finance',
+        title: t('Finances'),
         items: [
           {
             title: t('Wallet'),
             url: '/wallet',
             icon: Wallet,
           },
+        ],
+      },
+      {
+        id: 'account-and-security',
+        title: t('Account & Security'),
+        items: [
+          ...extSupportTicketsItems(t, myTicketBadge),
           {
             title: t('Profile'),
             url: '/profile',
@@ -128,9 +144,57 @@ export function useSidebarData(): SidebarData {
           },
         ],
       },
+      // --- Admin panel groups (panel: 'admin'). Subdivided for parity with the
+      // reference console; every route here already exists in this fork. The
+      // Analytics group reuses the shared data routes (Overview / Dashboard /
+      // Logs), which render admin-scoped data for admins. ---
       {
-        id: 'admin',
-        title: t('Admin'),
+        id: 'admin-analytics',
+        title: t('Analytics'),
+        panel: 'admin',
+        items: [
+          {
+            title: t('Overview'),
+            url: '/dashboard/overview',
+            icon: Activity,
+          },
+          {
+            title: t('Dashboard'),
+            url: '/dashboard/models',
+            icon: LayoutDashboard,
+          },
+          {
+            title: t('Logs'),
+            url: '/usage-logs/common',
+            activeUrls: [
+              '/usage-logs/common',
+              '/usage-logs/task',
+              '/usage-logs/drawing',
+            ],
+            configUrls: [
+              '/usage-logs/common',
+              '/usage-logs/task',
+              '/usage-logs/drawing',
+            ],
+            icon: ScrollText,
+          },
+          {
+            title: t('Audit Logs'),
+            url: '/usage-logs/audit',
+            icon: ClipboardList,
+          },
+          {
+            title: t('System Info'),
+            url: '/system-info',
+            icon: ServerCog,
+            requiredRole: ROLE.SUPER_ADMIN,
+          },
+        ],
+      },
+      {
+        id: 'admin-gateway',
+        title: t('Gateway'),
+        panel: 'admin',
         items: [
           {
             title: t('Channels'),
@@ -143,6 +207,19 @@ export function useSidebarData(): SidebarData {
             icon: Box,
           },
           {
+            title: t('Task Plugins'),
+            url: '/task-plugins',
+            icon: PlugZap,
+            requiredRole: ROLE.SUPER_ADMIN,
+          },
+        ],
+      },
+      {
+        id: 'admin-members',
+        title: t('Members'),
+        panel: 'admin',
+        items: [
+          {
             title: t('Users'),
             url: '/users',
             icon: Users,
@@ -152,31 +229,39 @@ export function useSidebarData(): SidebarData {
             url: '/redemption-codes',
             icon: Ticket,
           },
+          ...extTicketManagementItems(t, canReadTickets, adminTicketBadge),
           {
             title: t('Subscriptions'),
             url: '/subscriptions',
             icon: CreditCard,
           },
-          {
-            title: t('System Info'),
-            url: '/system-info',
-            icon: ServerCog,
-            requiredRole: ROLE.SUPER_ADMIN,
-          },
-          {
-            title: t('Task Plugins'),
-            url: '/task-plugins',
-            icon: PlugZap,
-            requiredRole: ROLE.SUPER_ADMIN,
-          },
-          {
-            title: t('System Settings'),
-            url: '/system-settings/site',
-            activeUrls: ['/system-settings'],
-            icon: Settings,
-          },
         ],
       },
+      // System settings sections surfaced directly into the admin panel, each
+      // as its OWN group (header + flat sub-page links), matching the rest of
+      // the sidebar — not a single collapsible "System Administration" group.
+      ...getSystemSettingsNavGroups(t).flatMap((group) =>
+        group.items.flatMap((section) =>
+          section.items
+            ? [
+                {
+                  id: `admin-settings-${section.title}`,
+                  title: section.title,
+                  panel: 'admin' as const,
+                  // Long settings list: start folded to keep the sidebar tidy;
+                  // the structural groups above stay expanded.
+                  defaultCollapsed: true,
+                  // /system-settings/* routes are SUPER_ADMIN-guarded; hide
+                  // the links from plain admins instead of serving dead 403s.
+                  items: section.items.map((item) => ({
+                    ...item,
+                    requiredRole: ROLE.SUPER_ADMIN,
+                  })),
+                },
+              ]
+            : []
+        )
+      ),
     ],
   }
 }

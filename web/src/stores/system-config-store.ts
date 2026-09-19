@@ -86,7 +86,7 @@ export const useSystemConfigStore = create<SystemConfigState>()(
             ...newConfig,
             currency: {
               ...state.config.currency,
-              ...(newConfig.currency ?? {}),
+              ...newConfig.currency,
             },
           },
         })),
@@ -95,9 +95,9 @@ export const useSystemConfigStore = create<SystemConfigState>()(
     }),
     {
       name: 'system-config-storage',
+      version: 1,
       partialize: (state) => ({
         config: state.config,
-        loadedLogoUrl: state.loadedLogoUrl,
       }),
     }
   )

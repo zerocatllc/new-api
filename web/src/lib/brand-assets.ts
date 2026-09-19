@@ -16,19 +16,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-/**
- * Application-wide constants
- */
+import { DEFAULT_LOGO } from './constants'
 
-// System Configuration Defaults
-// PUBLIC_SITE_NAME (frontend env file or the build environment) brands a
-// deployment at build time; /api/status system_name still wins at runtime.
-export const DEFAULT_SYSTEM_NAME = import.meta.env.PUBLIC_SITE_NAME || 'ZeroCat'
-export const DEFAULT_LOGO = '/zerocat-logo.svg'
-
-// LocalStorage Keys
-export const STORAGE_KEYS = {
-  SYSTEM_NAME: 'system_name',
-  LOGO: 'logo',
-  FOOTER_HTML: 'footer_html',
-} as const
+// Resolve only shipped ZeroCat defaults. Custom branding keeps its original URL.
+export function resolveBrandLogo(url?: string | null): string {
+  if (
+    !url ||
+    url === '/logo.png' ||
+    url === '/zero-cat-logo-loop.webp' ||
+    url === 'https://zero.cat/zero-cat-logo-loop.webp'
+  ) {
+    return DEFAULT_LOGO
+  }
+  return url
+}

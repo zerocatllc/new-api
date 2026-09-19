@@ -430,10 +430,7 @@ export function formatCurrencyFromUSD(
     )
   }
 
-  const value =
-    meta.kind === 'currency'
-      ? amountUSD * meta.exchangeRate
-      : amountUSD * meta.exchangeRate
+  const value = amountUSD * meta.exchangeRate
 
   return formatCurrencyValue(value, merged, meta)
 }

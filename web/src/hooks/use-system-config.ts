@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 import { DEFAULT_LOGO } from '@/lib/constants'
 import { applyFaviconToDom } from '@/lib/dom-utils'
@@ -27,6 +27,13 @@ import { useSystemConfigStore } from '@/stores/system-config-store'
 interface UseSystemConfigOptions {
   /** Automatically fetch config from backend (use only in root component) */
   autoLoad?: boolean
+}
+
+export function resolveSystemLogo(
+  configuredLogo: string,
+  loadedLogoUrl: string
+): string {
+  return configuredLogo === loadedLogoUrl ? configuredLogo : DEFAULT_LOGO
 }
 
 /** Preload an image, returning a cleanup that detaches the pending handlers. */
@@ -85,9 +92,11 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
   // Preload logo image when URL changes
   useEffect(() => {
     const { logo } = config
-
-    // Skip if logo is already loaded
-    if (!logo || logo === loadedLogoUrl) return
+    if (!logo || logo === DEFAULT_LOGO) {
+      setLoadedLogoUrl(DEFAULT_LOGO)
+      return
+    }
+    if (logo === loadedLogoUrl) return
 
     // Preload new logo
     return preloadImage(
@@ -101,16 +110,18 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
           // eslint-disable-next-line no-console
           console.error('Failed to load logo:', logo)
         }
-        // Mark as loaded even on error to prevent infinite retry
-        setLoadedLogoUrl(logo)
+        setLoadedLogoUrl(DEFAULT_LOGO)
       }
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.logo, loadedLogoUrl, setLoadedLogoUrl])
 
+  const resolvedLogo = resolveSystemLogo(config.logo, loadedLogoUrl)
+
   return {
     ...config,
+    logo: resolvedLogo,
     loading,
-    logoLoaded: config.logo === loadedLogoUrl && !!loadedLogoUrl,
+    logoLoaded: resolvedLogo === config.logo && !!resolvedLogo,
   }
 }

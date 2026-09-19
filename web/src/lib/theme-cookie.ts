@@ -16,19 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-/**
- * Application-wide constants
- */
-
-// System Configuration Defaults
-// PUBLIC_SITE_NAME (frontend env file or the build environment) brands a
-// deployment at build time; /api/status system_name still wins at runtime.
-export const DEFAULT_SYSTEM_NAME = import.meta.env.PUBLIC_SITE_NAME || 'ZeroCat'
-export const DEFAULT_LOGO = '/zerocat-logo.svg'
-
-// LocalStorage Keys
-export const STORAGE_KEYS = {
-  SYSTEM_NAME: 'system_name',
-  LOGO: 'logo',
-  FOOTER_HTML: 'footer_html',
-} as const
+/* Single source of truth for the theme cookie name. Imported by the theme
+ * provider at runtime AND by rsbuild.config.ts at build time, which injects
+ * it into index.html's pre-paint theme script — keep this module free of
+ * browser/React imports so the node-side config can load it. */
+export const THEME_COOKIE_NAME = 'vite-ui-theme'

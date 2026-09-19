@@ -81,9 +81,14 @@ describe('security sidebar visibility', () => {
     )
     expect(
       result.current
-        .find((group) => group.id === 'personal')
+        .find((group) => group.id === 'account-and-security')
         ?.items.map((item) => item.title)
-    ).toEqual(['Wallet', 'Profile', 'Security & Access'])
+    ).toEqual(['Support Tickets', 'Profile', 'Security & Access'])
+    expect(
+      result.current
+        .flatMap((group) => group.items)
+        .some((item) => item.title === 'Wallet')
+    ).toBe(true)
     expect(
       result.current
         .flatMap((group) => group.items)
@@ -133,7 +138,7 @@ describe('audit log sidebar entry', () => {
       .flatMap((group) => group.items)
       .map((item) => item.title)
     expect(titles).not.toContain('Audit Logs')
-    expect(titles).toContain('Usage Logs')
+    expect(titles).toContain('Logs')
   })
 
   it('legacy configurations show a separate Audit Logs link immediately after Usage Logs', () => {
@@ -142,8 +147,9 @@ describe('audit log sidebar entry', () => {
       { console: { enabled: true, log: true } }
     )
     const items =
-      result.current.find((group) => group.id === 'general')?.items ?? []
-    const usageIndex = items.findIndex((item) => item.title === 'Usage Logs')
+      result.current.find((group) => group.id === 'build-and-usage')?.items ??
+      []
+    const usageIndex = items.findIndex((item) => item.title === 'Logs')
     expect(items[usageIndex + 1]).toMatchObject({
       title: 'Audit Logs',
       url: '/usage-logs/audit',

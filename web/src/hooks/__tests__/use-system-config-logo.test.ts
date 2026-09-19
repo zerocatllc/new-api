@@ -16,19 +16,19 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-/**
- * Application-wide constants
- */
+import { expect, it } from 'vitest'
 
-// System Configuration Defaults
-// PUBLIC_SITE_NAME (frontend env file or the build environment) brands a
-// deployment at build time; /api/status system_name still wins at runtime.
-export const DEFAULT_SYSTEM_NAME = import.meta.env.PUBLIC_SITE_NAME || 'ZeroCat'
-export const DEFAULT_LOGO = '/zerocat-logo.svg'
+import { DEFAULT_LOGO } from '@/lib/constants'
 
-// LocalStorage Keys
-export const STORAGE_KEYS = {
-  SYSTEM_NAME: 'system_name',
-  LOGO: 'logo',
-  FOOTER_HTML: 'footer_html',
-} as const
+import { resolveSystemLogo } from '../use-system-config'
+
+it('keeps the bundled logo until the configured logo is verified', () => {
+  expect(
+    resolveSystemLogo('https://assets.example.com/logo.png', DEFAULT_LOGO)
+  ).toBe(DEFAULT_LOGO)
+})
+
+it('uses the configured logo after preloading succeeds', () => {
+  const logo = 'https://assets.example.com/logo.png'
+  expect(resolveSystemLogo(logo, logo)).toBe(logo)
+})

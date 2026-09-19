@@ -77,6 +77,14 @@ export const THEME_PRESETS = [
     name: 'Lavender Dream',
     swatches: ['oklch(0.5709 0.1808 306.89)', 'oklch(0.811 0.0589 201.14)'],
   },
+  {
+    // User-defined accent. The real color lives in `customColor` (a hex from
+    // the drawer's color input) and is injected inline at runtime; these
+    // swatches are placeholders — the drawer renders the live color instead.
+    value: 'custom',
+    name: 'Custom',
+    swatches: ['oklch(0.62 0.19 264)', 'oklch(0.62 0.19 264)'],
+  },
 ] as const
 
 export type ThemePreset = (typeof THEME_PRESETS)[number]['value']
@@ -113,7 +121,13 @@ export type ThemeCustomization = {
   radius: ThemeRadius
   scale: ThemeScale
   contentLayout: ContentLayout
+  // Hex accent for the `custom` preset (e.g. '#6366f1'). Only meaningful when
+  // `preset === 'custom'`; ignored otherwise.
+  customColor: string
 }
+
+/** Default accent for the `custom` preset, before the user picks one. */
+export const DEFAULT_CUSTOM_COLOR = '#6366f1'
 
 export const DEFAULT_THEME_CUSTOMIZATION: ThemeCustomization = {
   preset: 'default',
@@ -121,6 +135,7 @@ export const DEFAULT_THEME_CUSTOMIZATION: ThemeCustomization = {
   radius: 'default',
   scale: 'default',
   contentLayout: 'full',
+  customColor: DEFAULT_CUSTOM_COLOR,
 }
 
 export const THEME_PRESET_VALUES = new Set(
@@ -160,6 +175,7 @@ export const THEME_COOKIE_KEYS = {
   radius: 'theme_radius',
   scale: 'theme_scale',
   contentLayout: 'theme_content_layout',
+  customColor: 'theme_custom_color',
 } as const
 
 /**
@@ -194,4 +210,29 @@ export function resolveThemeFont(
     return PRESET_DEFAULT_FONT[preset] ?? 'sans'
   }
   return font
+}
+
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
+
+/** Whether `value` is a 6-digit hex color (the format `<input type="color">` emits). */
+export function isHexColor(value: string): boolean {
+  return HEX_COLOR_RE.test(value)
+}
+
+/**
+ * Pick a readable foreground (near-ink or near-white) for an arbitrary custom
+ * primary color, so button/label text never goes invisible on a pale or neon
+ * accent. Uses sRGB relative luminance (WCAG) split at 0.5.
+ */
+export function readableForeground(hex: string): string {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex)
+  if (!m) return 'oklch(0.985 0 0)'
+  const n = Number.parseInt(m[1], 16)
+  const toLinear = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  const r = toLinear(((n >> 16) & 255) / 255)
+  const g = toLinear(((n >> 8) & 255) / 255)
+  const b = toLinear((n & 255) / 255)
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  return luminance > 0.5 ? 'oklch(0.205 0 0)' : 'oklch(0.985 0 0)'
 }

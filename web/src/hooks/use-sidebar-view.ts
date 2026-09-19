@@ -27,6 +27,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 import { useSidebarConfig } from './use-sidebar-config'
 import { useSidebarData } from './use-sidebar-data'
+import { useSidebarPanel } from './use-sidebar-panel'
 
 /** Sentinel key used for the root navigation in animation `key=` props */
 const ROOT_VIEW_KEY = '__root'
@@ -48,6 +49,7 @@ export function useSidebarView(): ResolvedSidebarView {
   const { t } = useTranslation()
   const pathname = useLocation({ select: (l) => l.pathname })
   const userRole = useAuthStore((s) => s.auth.user?.role)
+  const { panel } = useSidebarPanel()
   const rootSidebarData = useSidebarData()
   const configFilteredRoot = useSidebarConfig(rootSidebarData.navGroups)
 
@@ -55,14 +57,21 @@ export function useSidebarView(): ResolvedSidebarView {
     const role = userRole ?? ROLE.GUEST
     const isAdmin = role >= ROLE.ADMIN
     return configFilteredRoot
-      .filter((group) => (group.id === 'admin' ? isAdmin : true))
+      .filter((group) => {
+        const groupPanel = group.panel ?? 'user'
+        // Show only the active panel's groups; admin groups additionally
+        // require admin role (defence in depth — `panel` is 'admin' only when
+        // the user can access it, but keep the gate explicit).
+        if (groupPanel !== panel) return false
+        return groupPanel === 'admin' ? isAdmin : true
+      })
       .map((group) => {
         const items = group.items.filter(
           (item) => item.requiredRole === undefined || role >= item.requiredRole
         )
         return items.length === group.items.length ? group : { ...group, items }
       })
-  }, [configFilteredRoot, userRole])
+  }, [configFilteredRoot, userRole, panel])
 
   const view = resolveSidebarView(pathname)
 

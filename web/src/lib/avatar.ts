@@ -18,7 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import type { CSSProperties } from 'react'
 
-export type UserAvatarStyle = Pick<CSSProperties, 'backgroundColor' | 'color'>
+import { AVATAR_PRESETS, avatarUrl } from './avatar-presets'
+
+export type UserAvatarStyle = Pick<
+  CSSProperties,
+  'backgroundColor' | 'backgroundImage' | 'color'
+>
 
 function hashString(value: string): number {
   let hash = 0
@@ -28,18 +33,38 @@ function hashString(value: string): number {
   return hash
 }
 
+// Deterministic two-tone gradient derived from the name. Used only as the
+// fallback chip behind the illustrated avatar (e.g. before the SVG loads or if
+// it fails), so every user still gets a distinct, colorful placeholder.
 export function getUserAvatarStyle(name: string): UserAvatarStyle {
   const hash = hashString(name)
   const hue = hash % 360
-  const saturation = 54 + (hash % 8)
-  const lightness = 52 + ((hash >> 4) % 8)
+  // Second hue offset by 40-120deg for a vivid but harmonious duo-tone.
+  const hue2 = (hue + 40 + ((hash >> 8) % 80)) % 360
 
   return {
-    backgroundColor: `hsl(${hue} ${saturation}% ${lightness}%)`,
+    backgroundColor: `hsl(${hue} 60% 52%)`,
+    backgroundImage: `linear-gradient(135deg, hsl(${hue} 68% 56%), hsl(${hue2} 64% 46%))`,
     color: 'white',
   }
 }
 
 export function getUserAvatarFallback(name: string): string {
   return name.trim().charAt(0).toUpperCase() || '?'
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic illustrated avatar.
+//
+// Every user maps to one cat from the shared preset set (see
+// `lib/avatar-presets`) by hashing their name. Same name -> same cat, every
+// render. The current user can override this with their own pick (localStorage);
+// other users (e.g. log rows) always use this deterministic mapping.
+// ---------------------------------------------------------------------------
+
+export function getUserAvatarUrl(name: string): string {
+  const seed = name || '?'
+  const preset = AVATAR_PRESETS[hashString(seed) % AVATAR_PRESETS.length]
+  // `avatarUrl` always resolves a known preset to a non-null URL.
+  return avatarUrl(preset) as string
 }

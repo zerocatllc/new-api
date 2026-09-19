@@ -16,19 +16,28 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { createContext, useContext } from 'react'
+
 /**
- * Application-wide constants
+ * Search context and its consumer hook.
+ *
+ * Kept separate from `search-provider.tsx` so that consumers such as
+ * `CommandMenu` can read the context without importing the provider, which
+ * renders `CommandMenu` itself and would otherwise form a dependency cycle.
  */
+export type SearchContextType = {
+  open: boolean
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>
+}
 
-// System Configuration Defaults
-// PUBLIC_SITE_NAME (frontend env file or the build environment) brands a
-// deployment at build time; /api/status system_name still wins at runtime.
-export const DEFAULT_SYSTEM_NAME = import.meta.env.PUBLIC_SITE_NAME || 'ZeroCat'
-export const DEFAULT_LOGO = '/zerocat-logo.svg'
+export const SearchContext = createContext<SearchContextType | null>(null)
 
-// LocalStorage Keys
-export const STORAGE_KEYS = {
-  SYSTEM_NAME: 'system_name',
-  LOGO: 'logo',
-  FOOTER_HTML: 'footer_html',
-} as const
+export const useSearch = () => {
+  const searchContext = useContext(SearchContext)
+
+  if (!searchContext) {
+    throw new Error('useSearch has to be used within SearchProvider')
+  }
+
+  return searchContext
+}
