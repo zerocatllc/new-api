@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { Resolver } from 'react-hook-form'
+import { useWatch, type Resolver } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
@@ -131,6 +131,10 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
         }
       },
     })
+  const serverAddress = useWatch({
+    control: form.control,
+    name: 'ServerAddress',
+  })
 
   return (
     <>
@@ -176,6 +180,16 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                     <FormDescription>
                       {t(
                         'The public URL of your server, used for OAuth callbacks, webhooks, and other external integrations'
+                      )}
+                      {!serverAddress?.trim() && (
+                        <span
+                          className='text-destructive mt-1 block'
+                          role='alert'
+                        >
+                          {t(
+                            'Configure a public server address before using password reset, OAuth, payments, Midjourney, or ticket notification links.'
+                          )}
+                        </span>
                       )}
                     </FormDescription>
                     <FormMessage />

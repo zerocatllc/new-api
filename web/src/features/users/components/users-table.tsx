@@ -45,6 +45,7 @@ import { useUsersColumns } from './users-columns'
 import { useUsers } from './users-provider'
 
 const route = getRouteApi('/_authenticated/users/')
+const USERS_VIEW_MODE_STORAGE_KEY = 'users:view-mode:v1'
 
 const USER_SORTABLE_COLUMNS = new Set<UserSortBy>([
   'id',
@@ -214,8 +215,18 @@ export function UsersTable() {
       )}
       skeletonKeyPrefix='users-skeleton'
       applyHeaderSize
+      enableCardView
+      defaultViewMode='table'
+      mobileViewMode='card'
+      hideViewModeToggleOnMobile
+      viewModeStorageKey={USERS_VIEW_MODE_STORAGE_KEY}
+      fixedHeight={false}
+      paginationInFooter={false}
+      tableClassName='bg-card/60'
       toolbarProps={{
         searchPlaceholder: t('Filter by username, name or email...'),
+        className:
+          'rounded-xl border bg-card/70 p-3 shadow-xs supports-[backdrop-filter]:backdrop-blur-sm',
         searchDebounceMs: 500,
         filters: [
           {

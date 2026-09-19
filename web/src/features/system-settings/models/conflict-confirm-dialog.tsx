@@ -65,6 +65,7 @@ export function ConflictConfirmDialog(props: ConflictConfirmDialogProps) {
       )}
       <StaticDataTable
         className='max-h-96 overflow-y-auto'
+        mobileCards
         tableClassName='min-w-[640px]'
         data={conflicts}
         columns={[

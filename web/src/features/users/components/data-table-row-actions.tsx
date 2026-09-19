@@ -151,7 +151,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             />
           }
         >
-          <Pencil />
+          <Pencil className='size-4' />
         </TooltipTrigger>
         <TooltipContent>{t('Edit')}</TooltipContent>
       </Tooltip>

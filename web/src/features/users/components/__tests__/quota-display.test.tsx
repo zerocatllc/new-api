@@ -340,13 +340,13 @@ it('shows balance above usage on mobile cards in Chinese', async () => {
   await i18n.changeLanguage('zh')
   try {
     await renderUsersList()
-    expect(screen.getByText('可用余额 ($)')).toBeInTheDocument()
+    expect(screen.getByText('当前可用余额 ($)')).toBeInTheDocument()
     expect(screen.getByText('已用')).toBeInTheDocument()
     expect(screen.getByText('0.0038')).toBeInTheDocument()
     expect(screen.getByText('0.0022')).toBeInTheDocument()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
     await userEvent.click(
-      screen.getByRole('button', { name: /可用余额 0.0038/ })
+      screen.getByRole('button', { name: /当前可用余额 0.0038/ })
     )
     const detail = await screen.findByRole('dialog', { name: '额度 ($)' })
     expect(within(detail).getByText('累计已用')).toBeInTheDocument()

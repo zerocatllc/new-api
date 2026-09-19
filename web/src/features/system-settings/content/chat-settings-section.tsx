@@ -135,7 +135,6 @@ export function ChatSettingsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save chat settings'
           />
           <Tabs
             value={editMode}

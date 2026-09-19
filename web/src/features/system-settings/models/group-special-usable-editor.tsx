@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Combobox } from '@/components/ui/combobox'
 import {
   AlertTriangle,
   ChevronDown,
@@ -41,8 +40,16 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const sectionCardClassName =
   'relative shadow-sm ring-0 before:pointer-events-none before:absolute before:inset-0 before:rounded-xl before:border before:border-border/90'
@@ -141,13 +148,15 @@ function GroupSelect(props: GroupSelectProps) {
 
   return (
     <Combobox
-  options={knownOptions.map((name) => ({ value: name, label: name }))}
-  value={props.value}
-  onValueChange={(value) => { if (value) props.onValueChange(value) }}
-  className={props.className}
-  placeholder={props.placeholder}
-  aria-label={props.placeholder}
-/>
+      options={knownOptions.map((name) => ({ value: name, label: name }))}
+      value={props.value}
+      onValueChange={(value) => {
+        if (value) props.onValueChange(value)
+      }}
+      className={props.className}
+      placeholder={props.placeholder}
+      aria-label={props.placeholder}
+    />
   )
 }
 
@@ -178,9 +187,7 @@ function GroupSection(props: GroupSectionProps) {
         <div className='flex items-center justify-between p-3'>
           <div className='flex items-center gap-2'>
             <CollapsibleTrigger
-              render={
-                <Button variant='ghost' size='sm' className='h-6 w-6 p-0' />
-              }
+              render={<Button variant='ghost' size='icon-xs' />}
             >
               {open ? (
                 <ChevronUp className='h-4 w-4' />

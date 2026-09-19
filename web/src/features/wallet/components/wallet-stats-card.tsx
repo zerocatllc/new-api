@@ -16,11 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Activity, BarChart3, WalletCards } from 'lucide-react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  getCurrencyDisplay,
+  getCurrencyLabel,
+  formatQuotaWithCurrency,
+} from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
 
 import type { UserWalletData } from '../types'
@@ -32,71 +37,81 @@ interface WalletStatsCardProps {
 
 export function WalletStatsCard(props: WalletStatsCardProps) {
   const { t } = useTranslation()
+  const quota = props.user?.quota ?? 0
+
+  // Reference shows the raw USD equivalent as a secondary line whenever the
+  // display currency is not already USD. quotaPerUnit == tokens per 1 USD, so
+  // the USD amount is quota / quotaPerUnit (no fabricated rate).
+  const usdSecondary = useMemo(() => {
+    if (getCurrencyLabel() === 'USD') return null
+    const { config } = getCurrencyDisplay()
+    const perUnit = config.quotaPerUnit > 0 ? config.quotaPerUnit : 1
+    const usd = quota / perUnit
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      useGrouping: false,
+    }).format(usd)
+  }, [quota])
+
   if (props.loading) {
     return (
-      <div className='grid grid-cols-3 divide-x rounded-lg border'>
-        {['balance', 'usage', 'requests'].map((key) => (
-          <div key={key} className='min-w-0 px-2.5 py-2.5 sm:px-5 sm:py-4'>
-            <Skeleton className='h-3.5 w-full' />
-            <Skeleton className='mt-2 h-6 w-full sm:h-7' />
-            <Skeleton className='mt-1.5 hidden h-3.5 w-24 md:block' />
-          </div>
-        ))}
-      </div>
+      <Card className='flex h-full flex-col rounded-xl'>
+        <CardContent className='flex-1 p-6'>
+          <Skeleton className='h-3.5 w-24' />
+          <Skeleton className='mt-3 h-10 w-48' />
+          <Skeleton className='mt-2 h-4 w-28' />
+        </CardContent>
+        <div className='flex flex-wrap items-center gap-x-6 gap-y-1 border-t px-6 py-3'>
+          <Skeleton className='h-4 w-32' />
+          <Skeleton className='h-4 w-32' />
+        </div>
+      </Card>
     )
   }
 
-  const stats: {
-    label: string
-    value: string
-    description: string
-    icon: typeof WalletCards
-    tone: IconBadgeTone
-  }[] = [
-    {
-      label: t('Current Balance'),
-      value: formatQuota(props.user?.quota ?? 0),
-      description: t('Remaining quota'),
-      icon: WalletCards,
-      tone: 'success',
-    },
-    {
-      label: t('Total Usage'),
-      value: formatQuota(props.user?.used_quota ?? 0),
-      description: t('Total consumed quota'),
-      icon: BarChart3,
-      tone: 'info',
-    },
-    {
-      label: t('API Requests'),
-      value: (props.user?.request_count ?? 0).toLocaleString(),
-      description: t('Total requests made'),
-      icon: Activity,
-      tone: 'chart-4',
-    },
-  ]
-
   return (
-    <div className='grid grid-cols-3 divide-x rounded-lg border'>
-      {stats.map((item) => (
-        <div key={item.label} className='min-w-0 px-2.5 py-2.5 sm:px-5 sm:py-4'>
-          <div className='flex items-center gap-1.5 sm:gap-2.5'>
-            <IconBadge tone={item.tone} size='stat'>
-              <item.icon />
-            </IconBadge>
-            <div className='text-muted-foreground truncate text-[11px] font-medium tracking-wider uppercase sm:text-xs'>
-              {item.label}
-            </div>
-          </div>
+    <Card className='relative isolate flex h-full flex-col overflow-hidden rounded-xl'>
+      {/* Reference texture (ephone billing hero): a dot grid fading in from
+          the right with a primary-tinted glow in the lower corner. Purely
+          decorative; sits behind the content. */}
+      <div aria-hidden='true' className='pointer-events-none absolute inset-0'>
+        <div className='absolute inset-y-0 right-0 w-3/5 bg-[radial-gradient(var(--canvas-dot)_1.5px,transparent_1.5px)] [mask-image:linear-gradient(to_left,black,transparent)] [background-size:16px_16px]' />
+        <div className='absolute -right-16 -bottom-28 size-72 rounded-full bg-[color-mix(in_oklab,var(--brand)_14%,transparent)] blur-3xl' />
+      </div>
 
-          <div className='text-foreground mt-1.5 font-mono text-sm font-bold tracking-tight break-all tabular-nums sm:mt-2.5 sm:text-2xl'>
-            {item.value}
-          </div>
-          <div className='text-muted-foreground/60 mt-1 hidden text-xs md:block'>
-            {item.description}
-          </div>
-        </div>
-      ))}
-    </div>
+      <CardContent className='flex-1 p-6'>
+        <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+          {t('Account Balance')}
+        </p>
+        <p className='mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl'>
+          {formatQuotaWithCurrency(quota, {
+            digitsLarge: 2,
+            digitsSmall: 2,
+            abbreviate: false,
+          })}
+        </p>
+        {usdSecondary ? (
+          <p className='text-muted-foreground mt-1 text-sm'>
+            ≈ {usdSecondary} USD
+          </p>
+        ) : null}
+      </CardContent>
+
+      <div className='text-muted-foreground flex flex-wrap items-center gap-x-6 gap-y-1 border-t px-6 py-3 text-sm'>
+        <span>
+          {t('Total Usage')}{' '}
+          <span className='text-foreground font-medium tabular-nums'>
+            {formatQuota(props.user?.used_quota ?? 0)}
+          </span>
+        </span>
+        <span>
+          {t('API Requests')}{' '}
+          <span className='text-foreground font-medium tabular-nums'>
+            {(props.user?.request_count ?? 0).toLocaleString()}
+          </span>
+        </span>
+      </div>
+    </Card>
   )
 }

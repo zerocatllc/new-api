@@ -42,7 +42,6 @@ export function UserQuotaCell(props: UserQuotaCellProps) {
   const formattedUsed = formatQuotaWithCurrency(props.used, {
     showSymbol: false,
   })
-
   return (
     <QuotaDetailsPopover
       title={`${t('Quota')} (${quotaUnit})`}

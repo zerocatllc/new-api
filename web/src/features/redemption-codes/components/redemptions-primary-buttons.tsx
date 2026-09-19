@@ -16,12 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Plus, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { PagePrimaryAction } from '@/components/page-primary-action'
 import { Button } from '@/components/ui/button'
 import { handleServerError } from '@/lib/handle-server-error'
 
@@ -61,17 +62,16 @@ export function RedemptionsPrimaryButtons() {
     <>
       <div className='flex flex-wrap gap-2'>
         <Button
-          size='sm'
+          className='h-9 gap-2'
           variant='outline'
           onClick={() => setShowDeleteInvalidConfirm(true)}
         >
           <Trash2 className='text-destructive h-4 w-4' />
           {t('Delete Invalid')}
         </Button>
-        <Button size='sm' onClick={() => setOpen('create')}>
-          <Plus className='h-4 w-4' />
+        <PagePrimaryAction onClick={() => setOpen('create')}>
           {t('Create Code')}
-        </Button>
+        </PagePrimaryAction>
       </div>
 
       <ConfirmDialog

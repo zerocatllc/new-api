@@ -524,13 +524,15 @@ export function RatioSettingsCard({
   }
 
   const renderTabSwitcher = () => (
-    <TabsList className={`grid w-fit max-w-full ${tabsGridClass}`}>
-      {visibleTabs.map((tab) => (
-        <TabsTrigger key={tab} value={tab}>
-          {t(tabLabels[tab])}
-        </TabsTrigger>
-      ))}
-    </TabsList>
+    <div className='max-w-full overflow-x-auto'>
+      <TabsList className={`grid w-max min-w-full ${tabsGridClass}`}>
+        {visibleTabs.map((tab) => (
+          <TabsTrigger key={tab} value={tab}>
+            {t(tabLabels[tab])}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </div>
   )
 
   return (

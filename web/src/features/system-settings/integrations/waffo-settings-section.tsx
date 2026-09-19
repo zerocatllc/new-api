@@ -328,6 +328,7 @@ export function WaffoSettingsSection({
         </div>
 
         <StaticDataTable
+          mobileCards
           data={payMethods}
           emptyClassName='text-muted-foreground py-8'
           emptyContent={t('No payment methods configured')}

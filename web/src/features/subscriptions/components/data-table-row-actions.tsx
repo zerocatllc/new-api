@@ -17,10 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { Row } from '@tanstack/react-table'
-import { Pencil, Power, PowerOff, RotateCcw } from 'lucide-react'
+import { Pencil, RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import {
   Tooltip,
   TooltipContent,
@@ -94,21 +95,18 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       <Tooltip>
         <TooltipTrigger
           render={
-            <Button
-              variant='ghost'
-              size='icon-sm'
-              disabled={!complianceConfirmed}
-              onClick={handleToggleStatus}
-              aria-label={toggleLabel}
-              className={
-                isEnabled
-                  ? 'text-destructive hover:text-destructive'
-                  : 'text-success hover:text-success'
-              }
+            <span
+              className='inline-flex items-center px-1'
+              onClick={(e) => e.stopPropagation()}
             />
           }
         >
-          {isEnabled ? <PowerOff /> : <Power />}
+          <Switch
+            checked={isEnabled}
+            onCheckedChange={handleToggleStatus}
+            disabled={!complianceConfirmed}
+            aria-label={toggleLabel}
+          />
         </TooltipTrigger>
         <TooltipContent>{toggleLabel}</TooltipContent>
       </Tooltip>

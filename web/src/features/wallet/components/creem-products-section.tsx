@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { useTranslation } from 'react-i18next'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { formatNumber } from '@/lib/format'
 
 import { formatCreemPrice } from '../lib/format'
@@ -28,25 +27,13 @@ import type { CreemProduct } from '../types'
 interface CreemProductsSectionProps {
   products: CreemProduct[]
   onProductSelect: (product: CreemProduct) => void
-  loading?: boolean
 }
 
 export function CreemProductsSection({
   products,
   onProductSelect,
-  loading,
 }: CreemProductsSectionProps) {
   const { t } = useTranslation()
-
-  if (loading) {
-    return (
-      <div className='grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 md:grid-cols-3'>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className='h-24 rounded-lg' />
-        ))}
-      </div>
-    )
-  }
 
   if (!Array.isArray(products) || products.length === 0) {
     return null

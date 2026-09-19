@@ -55,7 +55,8 @@ function AdminSystemUpdateAction(props: SystemUpdateActionProps) {
   const [open, setOpen] = useState(false)
   const compact = props.compact ?? true
   const versionPresentation = props.presentation === 'version'
-  const version = update.currentVersion?.trim() || t('Unknown version')
+  const currentVersion = update.currentVersion?.trim() || ''
+  const version = currentVersion || t('Unknown version')
   const label = update.shouldNotify
     ? t('Update available')
     : t('Check for updates')
@@ -104,9 +105,11 @@ function AdminSystemUpdateAction(props: SystemUpdateActionProps) {
           )}
           aria-hidden='true'
         />
-        <span className='hidden max-w-32 truncate font-mono text-xs @min-[22rem]/system-brand:inline'>
-          {version}
-        </span>
+        {currentVersion && (
+          <span className='hidden max-w-32 truncate font-mono text-xs @min-[22rem]/system-brand:inline'>
+            {currentVersion}
+          </span>
+        )}
         {update.shouldNotify && (
           <Badge
             variant='secondary'

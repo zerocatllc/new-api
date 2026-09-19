@@ -136,7 +136,6 @@ export function DrawingSettingsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save drawing settings'
           />
           <div className='space-y-4'>
             {switches.map((item) => (

@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2, Save } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -63,6 +63,7 @@ import { getBgColorClass } from '@/lib/colors'
 import { handleServerError } from '@/lib/handle-server-error'
 
 import { SettingsSwitchField } from '../components/settings-form-layout'
+import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 
@@ -265,31 +266,27 @@ export function ApiInfoSection({ enabled, data }: ApiInfoSectionProps) {
 
   return (
     <SettingsSection title={t('API Addresses')}>
+      <SettingsPageFormActions
+        onSave={handleSaveAll}
+        isSaving={updateOption.isPending}
+        isSaveDisabled={!hasChanges}
+      />
       <div className='space-y-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <div className='flex flex-wrap items-center gap-2'>
-            <Button onClick={handleAdd} size='sm'>
-              <Plus className='mr-2 h-4 w-4' />
+            <Button onClick={handleAdd} className='h-9 gap-2'>
+              <Plus className='h-4 w-4' />
               {t('Add API')}
             </Button>
             <Button
               onClick={handleBatchDelete}
-              size='sm'
+              className='h-9 gap-2'
               variant='destructive'
               disabled={selectedIds.length === 0}
             >
-              <Trash2 className='mr-2 h-4 w-4' />
+              <Trash2 className='h-4 w-4' />
               {t('Delete (')}
               {selectedIds.length})
-            </Button>
-            <Button
-              onClick={handleSaveAll}
-              size='sm'
-              variant='secondary'
-              disabled={!hasChanges || updateOption.isPending}
-            >
-              <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('Saving...') : t('Save Settings')}
             </Button>
           </div>
           <SettingsSwitchField
@@ -301,6 +298,7 @@ export function ApiInfoSection({ enabled, data }: ApiInfoSectionProps) {
         </div>
 
         <StaticDataTable
+          mobileCards
           data={apiInfoList}
           getRowKey={(apiInfo) => apiInfo.id}
           emptyContent={t('No API Domains yet. Click "Add API" to create one.')}

@@ -41,11 +41,15 @@ interface UseBillingHistoryOptions {
   initialPage?: number
   /** Initial page size */
   initialPageSize?: number
+  /** Explicit data scope. User-facing pages must never inherit admin scope. */
+  scope?: 'self' | 'all'
 }
 
 export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
   const { initialPage = 1, initialPageSize = 10 } = options
-  const isAdmin = useIsAdmin()
+  const canManageOrders = useIsAdmin()
+  const scope = options.scope ?? 'self'
+  const loadAllOrders = scope === 'all' && canManageOrders
 
   const [records, setRecords] = useState<TopupRecord[]>([])
   const [total, setTotal] = useState(0)
@@ -64,7 +68,7 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
     const requestId = ++requestIdRef.current
     setLoading(true)
     try {
-      const response = isAdmin
+      const response = loadAllOrders
         ? await getAllBillingHistory(page, pageSize, debouncedKeyword)
         : await getUserBillingHistory(page, pageSize, debouncedKeyword)
 
@@ -88,14 +92,14 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
         setLoading(false)
       }
     }
-  }, [debouncedKeyword, isAdmin, page, pageSize])
+  }, [debouncedKeyword, loadAllOrders, page, pageSize])
 
   /**
    * Complete a pending order (admin only)
    */
   const handleCompleteOrder = useCallback(
     async (tradeNo: string) => {
-      if (!isAdmin) {
+      if (!loadAllOrders) {
         toast.error(i18next.t('Admin access required'))
         return false
       }
@@ -119,7 +123,7 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
         setCompleting(false)
       }
     },
-    [isAdmin, fetchBillingHistory]
+    [loadAllOrders, fetchBillingHistory]
   )
 
   /**
@@ -161,7 +165,7 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
     keyword,
     loading,
     completing,
-    isAdmin,
+    isAdmin: loadAllOrders,
     handlePageChange,
     handlePageSizeChange,
     handleSearch,

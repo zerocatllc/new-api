@@ -92,7 +92,7 @@ export function SettingsPageActionsPortal(
   if (!actionsContainer) return null
 
   return createPortal(
-    <div className='flex flex-wrap items-center justify-end gap-2'>
+    <div className='flex flex-wrap items-center justify-end gap-2 [&_[data-slot=button]]:min-h-9'>
       {props.children}
     </div>,
     actionsContainer
@@ -123,7 +123,7 @@ export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
       {props.onReset && (
         <Button
           type='button'
-          size='sm'
+          className='gap-2'
           variant={props.resetVariant ?? 'outline'}
           onClick={props.onReset}
           disabled={props.isResetDisabled || props.isSaving}
@@ -135,7 +135,7 @@ export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
       <Button
         ref={props.saveButtonRef}
         type='button'
-        size='sm'
+        className='gap-2'
         onClick={props.onSave}
         disabled={props.isSaving || props.isSaveDisabled}
       >

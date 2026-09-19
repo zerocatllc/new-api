@@ -101,6 +101,15 @@ type PricingSectionProps = {
   defaultValues: PricingFormValues
 }
 
+function getExchangeRateLabel(
+  displayType: string,
+  t: (key: string) => string
+): string {
+  if (displayType === 'CNY') return t('CNY per USD')
+  if (displayType === 'USD') return t('USD Exchange Rate')
+  return t('USD Exchange Rate')
+}
+
 export function PricingSection({ defaultValues }: PricingSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
@@ -236,11 +245,7 @@ export function PricingSection({ defaultValues }: PricingSectionProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {displayType === 'CNY'
-                        ? t('CNY per USD')
-                        : displayType === 'USD'
-                          ? t('USD Exchange Rate')
-                          : t('USD Exchange Rate')}
+                      {getExchangeRateLabel(displayType, t)}
                     </FormLabel>
                     <FormControl>
                       <Input

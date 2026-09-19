@@ -55,13 +55,14 @@ export function ProviderTable(props: ProviderTableProps) {
         <p className='text-muted-foreground text-sm'>
           {t('Manage custom OAuth providers for user authentication')}
         </p>
-        <Button size='sm' onClick={props.onCreate}>
+        <Button className='h-9 gap-2' onClick={props.onCreate}>
           <Plus className='mr-1.5 h-4 w-4' />
           {t('Add Provider')}
         </Button>
       </div>
 
       <StaticDataTable
+        mobileCards
         data={props.providers}
         getRowKey={(provider) => provider.id}
         emptyClassName='text-sm'

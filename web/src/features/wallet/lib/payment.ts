@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import {
   PAYMENT_TYPES,
+  PAYMENT_ICON_COLORS,
   DEFAULT_PRESET_MULTIPLIERS,
   DEFAULT_PAYMENT_TYPE,
   DEFAULT_MIN_TOPUP,
@@ -172,6 +173,41 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
   }
 
   return DEFAULT_MIN_TOPUP
+}
+
+/**
+ * Payment methods selectable in the confirmation dialog.
+ *
+ * The backend exposes Stripe via the `enable_stripe_topup` flag instead of an
+ * entry in `pay_methods`. When Stripe is the only enabled online method,
+ * `pay_methods` is empty and the recharge flow would have no selectable method
+ * (Continue button hidden, selection logic finds nothing). Inject a synthetic
+ * Stripe entry so the dialog can render it; `processPayment` already routes
+ * `type === 'stripe'` through the Stripe path.
+ */
+export function getEffectivePayMethods(
+  topupInfo: TopupInfo | null
+): PaymentMethod[] {
+  const methods = Array.isArray(topupInfo?.pay_methods)
+    ? [...topupInfo.pay_methods]
+    : []
+
+  if (
+    topupInfo?.enable_stripe_topup &&
+    !methods.some((method) => isStripePayment(method.type))
+  ) {
+    return [
+      ...methods,
+      {
+        name: 'Stripe',
+        type: PAYMENT_TYPES.STRIPE,
+        min_topup: topupInfo.stripe_min_topup,
+        color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.STRIPE],
+      },
+    ]
+  }
+
+  return methods
 }
 
 /**

@@ -16,6 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import {
+  BellRing,
+  Gauge,
+  Mail,
+  ScrollText,
+  SlidersHorizontal,
+  Workflow,
+  Wrench,
+} from 'lucide-react'
+
 import { SystemBehaviorSection } from '../general/system-behavior-section'
 import { EmailSettingsSection } from '../integrations/email-settings-section'
 import { MonitoringSettingsSection } from '../integrations/monitoring-settings-section'
@@ -30,6 +40,7 @@ const OPERATIONS_SECTIONS = [
   {
     id: 'behavior',
     titleKey: 'System Behavior',
+    icon: SlidersHorizontal,
     build: (settings: OperationsSettings) => (
       <SystemBehaviorSection
         defaultValues={{
@@ -43,6 +54,7 @@ const OPERATIONS_SECTIONS = [
   {
     id: 'alerts',
     titleKey: 'Monitoring & Alerts',
+    icon: BellRing,
     build: (settings: OperationsSettings) => (
       <MonitoringSettingsSection
         defaultValues={{
@@ -62,6 +74,7 @@ const OPERATIONS_SECTIONS = [
   {
     id: 'email',
     titleKey: 'SMTP Email',
+    icon: Mail,
     build: (settings: OperationsSettings) => (
       <EmailSettingsSection
         defaultValues={{
@@ -81,6 +94,7 @@ const OPERATIONS_SECTIONS = [
   {
     id: 'worker',
     titleKey: 'Worker Proxy',
+    icon: Workflow,
     build: (settings: OperationsSettings) => (
       <WorkerSettingsSection
         defaultValues={{
@@ -95,6 +109,7 @@ const OPERATIONS_SECTIONS = [
   {
     id: 'logs',
     titleKey: 'Log Maintenance',
+    icon: ScrollText,
     build: (settings: OperationsSettings) => (
       <LogSettingsSection
         defaultEnabled={Boolean(settings.LogConsumeEnabled)}
@@ -104,6 +119,7 @@ const OPERATIONS_SECTIONS = [
   {
     id: 'performance',
     titleKey: 'Performance',
+    icon: Gauge,
     build: (settings: OperationsSettings) => (
       <PerformanceSection
         defaultValues={{
@@ -130,6 +146,7 @@ const OPERATIONS_SECTIONS = [
   {
     id: 'update-checker',
     titleKey: 'System maintenance',
+    icon: Wrench,
     build: (
       _settings: OperationsSettings,
       currentVersion?: string | null,

@@ -160,10 +160,7 @@ export function SettingsControlGroup({
   return (
     <div
       data-settings-form-span='full'
-      className={cn(
-        'bg-muted/20 min-w-0 space-y-3 rounded-xl border px-3 py-2.5',
-        className
-      )}
+      className={cn('min-w-0 space-y-3', className)}
       {...props}
     />
   )
@@ -173,12 +170,7 @@ export function SettingsControlChildren({
   className,
   ...props
 }: SettingsControlChildrenProps) {
-  return (
-    <div
-      className={cn('border-border/70 ml-2 min-w-0 border-l pl-3', className)}
-      {...props}
-    />
-  )
+  return <div className={cn('min-w-0', className)} {...props} />
 }
 
 export function SettingsForm({ className, ...props }: ComponentProps<'form'>) {

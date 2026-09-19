@@ -58,7 +58,7 @@ export function SystemBehaviorSection({
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
 
-  const form = useForm({
+  const form = useForm<BehaviorFormValues>({
     resolver: zodResolver(behaviorSchema),
     defaultValues,
   })

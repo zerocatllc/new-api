@@ -144,7 +144,6 @@ export function IoNetDeploymentSettingsSection({
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending || isSubmitting}
             isSaveDisabled={!isDirty}
-            saveLabel='Save io.net settings'
           />
           <FormField
             control={form.control}

@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Combobox } from '@/components/ui/combobox'
 import {
   AlertTriangle,
   ChevronDown,
@@ -58,9 +57,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-
 import {
   Sheet,
   SheetContent,
@@ -232,13 +231,15 @@ function GroupNameSelect(props: GroupNameSelectProps) {
 
   return (
     <Combobox
-  options={options.map((name) => ({ value: name, label: name }))}
-  value={props.value}
-  onValueChange={(value) => { if (value) props.onValueChange(value) }}
-  className={props.className ?? 'w-48'}
-  placeholder={props.placeholder}
-  aria-label={props.placeholder}
-/>
+      options={options.map((name) => ({ value: name, label: name }))}
+      value={props.value}
+      onValueChange={(value) => {
+        if (value) props.onValueChange(value)
+      }}
+      className={props.className ?? 'w-48'}
+      placeholder={props.placeholder}
+      aria-label={props.placeholder}
+    />
   )
 }
 
@@ -532,6 +533,7 @@ function GroupPricingTable({
       <CardContent>
         <div className='space-y-3'>
           <StaticDataTable
+            mobileCards
             data={rows}
             getRowKey={(row) => row._id}
             emptyClassName='text-muted-foreground h-20 text-sm'
@@ -858,6 +860,7 @@ function GroupOverrideRules({
                         <div className='border-t'>
                           <StaticDataTable
                             className='rounded-none border-0'
+                            mobileCards
                             data={userGroupData.overrides}
                             getRowKey={(override) => override.targetGroup}
                             columns={[

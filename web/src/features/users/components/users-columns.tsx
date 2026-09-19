@@ -23,7 +23,7 @@ import { ActivityTimeCell } from '@/components/activity-time-cell'
 import { BadgeCell } from '@/components/data-table'
 import { GroupBadge } from '@/components/group-badge'
 import { LongText } from '@/components/long-text'
-import { StatusBadge } from '@/components/status-badge'
+import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -38,6 +38,7 @@ import { useSystemConfigStore } from '@/stores/system-config-store'
 import {
   USER_STATUS,
   USER_STATUSES,
+  USER_ROLE,
   USER_ROLES,
   isUserDeleted,
 } from '../constants'
@@ -137,6 +138,23 @@ export function useUsersColumns(): ColumnDef<User>[] {
       meta: { mobileTitle: true },
     },
     {
+      accessorKey: 'email',
+      header: t('Email'),
+      cell: ({ row }) => {
+        const email = row.getValue('email') as string | undefined
+        return email ? (
+          <LongText className='max-w-[240px] text-sm'>{email}</LongText>
+        ) : (
+          <span className='text-muted-foreground text-sm'>
+            {t('Not bound')}
+          </span>
+        )
+      },
+      enableSorting: false,
+      size: 240,
+      meta: { mobileOrder: 25 },
+    },
+    {
       accessorKey: 'status',
       header: t('Status'),
       cell: ({ row }) => {
@@ -151,14 +169,22 @@ export function useUsersColumns(): ColumnDef<User>[] {
           return null
         }
 
+        let statusClassName = '!bg-muted !text-muted-foreground shadow-sm'
+        if (statusConfig.value === USER_STATUS.ENABLED) {
+          statusClassName = '!bg-primary !text-primary-foreground shadow-sm'
+        } else if (statusConfig.value === USER_STATUS.DISABLED) {
+          statusClassName =
+            '!bg-destructive !text-destructive-foreground shadow-sm'
+        }
+
         return (
           <Tooltip>
-            <TooltipTrigger render={<div className='-ml-1.5 cursor-help' />}>
+            <TooltipTrigger render={<div className='cursor-help' />}>
               <StatusBadge
                 label={t(statusConfig.labelKey)}
                 variant={isUserDeleted(user) ? 'neutral' : statusConfig.variant}
                 copyable={false}
-                className='font-normal'
+                className={statusClassName}
               />
             </TooltipTrigger>
             <TooltipContent>
@@ -218,7 +244,23 @@ export function useUsersColumns(): ColumnDef<User>[] {
           return null
         }
 
-        return <span className='text-sm'>{t(roleConfig.labelKey)}</span>
+        const roleVariant: StatusVariant =
+          roleValue >= USER_ROLE.ADMIN ? 'danger' : 'neutral'
+
+        return (
+          <StatusBadge
+            label={t(roleConfig.labelKey)}
+            icon={roleConfig.icon}
+            variant={roleVariant}
+            size='sm'
+            copyable={false}
+            className={
+              roleValue >= USER_ROLE.ADMIN
+                ? '!bg-destructive !text-destructive-foreground shadow-sm'
+                : undefined
+            }
+          />
+        )
       },
       filterFn: (row, id, value) => {
         return value.includes(String(row.getValue(id)))

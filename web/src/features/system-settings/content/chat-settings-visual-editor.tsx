@@ -139,13 +139,14 @@ export function ChatSettingsVisualEditor({
             className='pl-9'
           />
         </div>
-        <Button onClick={handleAdd}>
-          <Plus className='mr-2 h-4 w-4' />
+        <Button onClick={handleAdd} className='h-9 gap-2'>
+          <Plus className='h-4 w-4' />
           {t('Add chat preset')}
         </Button>
       </div>
 
       <StaticDataTable
+        mobileCards
         data={filteredChats}
         getRowKey={(chat) => chat.name}
         emptyContent={

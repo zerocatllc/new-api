@@ -276,6 +276,7 @@ export function UserSubscriptionsDialog(props: Props) {
             </div>
 
             <StaticDataTable
+              mobileCards
               data={loading ? [] : subs}
               getRowKey={(record) => record.subscription.id}
               emptyClassName={loading ? 'py-8' : 'text-muted-foreground py-8'}

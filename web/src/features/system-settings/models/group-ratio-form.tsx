@@ -157,11 +157,10 @@ export const GroupRatioForm = memo(function GroupRatioForm({
         <SettingsPageActionsPortal>
           <Button
             type='button'
-            size='sm'
             onClick={form.handleSubmit(onSave)}
             disabled={isSaving}
           >
-            {isSaving ? t('Saving...') : t('Save group ratios')}
+            {isSaving ? t('Saving...') : t('Save Changes')}
           </Button>
         </SettingsPageActionsPortal>
         {editMode === 'visual' ? (

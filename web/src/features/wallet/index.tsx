@@ -24,11 +24,9 @@ import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { getSelf } from '@/lib/api'
 
-import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
-import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
+import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
-import { TransferDialog } from './components/dialogs/transfer-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
 import { SubscriptionPlansCard } from './components/subscription-plans-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
@@ -36,7 +34,6 @@ import { DEFAULT_DISCOUNT_RATE, PAYMENT_TYPES } from './constants'
 import {
   useTopupInfo,
   usePayment,
-  useAffiliate,
   useRedemption,
   useCreemPayment,
   useWaffoPayment,
@@ -44,6 +41,7 @@ import {
 } from './hooks'
 import {
   getDefaultPaymentType,
+  getEffectivePayMethods,
   getMinTopupAmount,
   dispatchSelectedPayment,
 } from './lib'
@@ -72,7 +70,6 @@ export function Wallet(props: WalletProps) {
   >(null)
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false)
   const [billingDialogOpen, setBillingDialogOpen] = useState(false)
   const [redemptionCode, setRedemptionCode] = useState('')
   const [creemDialogOpen, setCreemDialogOpen] = useState(false)
@@ -97,12 +94,6 @@ export function Wallet(props: WalletProps) {
     calculatePaymentAmount,
     processPayment,
   } = usePayment()
-  const {
-    affiliateLink,
-    loading: affiliateLoading,
-    transferQuota,
-    transferring,
-  } = useAffiliate()
   const { redeeming, redeemCode } = useRedemption()
   const { processing: creemProcessing, processCreemPayment } = useCreemPayment()
   const { processing: waffoProcessing, processWaffoPayment } = useWaffoPayment()
@@ -169,25 +160,36 @@ export function Wallet(props: WalletProps) {
     calculatePaymentAmount(amount, getCurrentPaymentType())
   }
 
-  // Handle payment method selection
+  // Switch payment method inside the confirmation dialog: re-price for the newly
+  // chosen method and keep the dialog open (the page no longer selects methods).
   const handlePaymentMethodSelect = async (method: PaymentMethod) => {
     setSelectedPaymentMethod(method)
     setSelectedWaffoMethodIndex(null)
     setPaymentLoading(method.type)
-
     try {
-      // Validate minimum topup
-      const minTopup = getMinTopupAmount(topupInfo)
-      if (topupAmount < minTopup) {
-        return
-      }
-
-      // Calculate payment amount and show confirmation dialog
       await calculatePaymentAmount(topupAmount, method.type)
-      setConfirmDialogOpen(true)
     } finally {
       setPaymentLoading(null)
     }
+  }
+
+  // Reference flow: the page only collects the amount, then "Continue Payment"
+  // opens the dialog where the payment method is actually chosen. Default to the
+  // first method whose minimum the current amount satisfies.
+  const handleContinuePayment = async () => {
+    const methods = getEffectivePayMethods(topupInfo)
+    const method =
+      selectedPaymentMethod ??
+      methods.find((m) => (m.min_topup ?? 0) <= topupAmount) ??
+      methods[0]
+    if (!method) return
+
+    const minTopup = getMinTopupAmount(topupInfo)
+    if (topupAmount < minTopup) return
+
+    setSelectedPaymentMethod(method)
+    await calculatePaymentAmount(topupAmount, method.type)
+    setConfirmDialogOpen(true)
   }
 
   // Handle payment confirmation
@@ -220,15 +222,6 @@ export function Wallet(props: WalletProps) {
       setRedemptionCode('')
       await fetchUser()
     }
-  }
-
-  // Handle transfer
-  const handleTransfer = async (amount: number) => {
-    const success = await transferQuota(amount)
-    if (success) {
-      await fetchUser()
-    }
-    return success
   }
 
   // Handle Creem product selection
@@ -287,14 +280,16 @@ export function Wallet(props: WalletProps) {
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
-          <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
-            <WalletStatsCard user={user} loading={userLoading} />
+          <div className='grid w-full gap-4 sm:gap-6 lg:grid-cols-3 lg:items-stretch'>
+            <div className='lg:col-span-3'>
+              <WalletStatsCard user={user} loading={userLoading} />
+            </div>
 
             <div
               className={
                 showSubscriptionPanel
-                  ? 'grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start'
-                  : 'grid gap-4'
+                  ? 'grid gap-4 lg:col-span-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start'
+                  : 'grid gap-4 lg:col-span-3'
               }
             >
               <div id='wallet-add-funds' className='scroll-mt-4'>
@@ -307,7 +302,8 @@ export function Wallet(props: WalletProps) {
                   onTopupAmountChange={handleTopupAmountChange}
                   paymentAmount={paymentAmount}
                   calculating={calculating}
-                  onPaymentMethodSelect={handlePaymentMethodSelect}
+                  onContinuePayment={handleContinuePayment}
+                  continueProcessing={processing}
                   paymentLoading={paymentLoading}
                   redemptionCode={redemptionCode}
                   onRedemptionCodeChange={setRedemptionCode}
@@ -338,16 +334,6 @@ export function Wallet(props: WalletProps) {
                 onPurchaseSuccess={fetchUser}
               />
             </div>
-
-            <AffiliateRewardsCard
-              user={user}
-              affiliateLink={affiliateLink}
-              onTransfer={() => setTransferDialogOpen(true)}
-              complianceConfirmed={
-                topupInfo?.payment_compliance_confirmed !== false
-              }
-              loading={affiliateLoading}
-            />
           </div>
         </SectionPageLayout.Content>
       </SectionPageLayout>
@@ -359,18 +345,11 @@ export function Wallet(props: WalletProps) {
         topupAmount={topupAmount}
         paymentAmount={paymentAmount}
         paymentMethod={selectedPaymentMethod}
+        paymentMethods={getEffectivePayMethods(topupInfo)}
+        onSelectMethod={handlePaymentMethodSelect}
         calculating={calculating}
         processing={processing || waffoProcessing || pancakeProcessing}
         discountRate={getDiscountRate()}
-        usdExchangeRate={effectiveUsdExchangeRate}
-      />
-
-      <TransferDialog
-        open={transferDialogOpen}
-        onOpenChange={setTransferDialogOpen}
-        onConfirm={handleTransfer}
-        availableQuota={user?.aff_quota ?? 0}
-        transferring={transferring}
       />
 
       <BillingHistoryDialog

@@ -479,22 +479,18 @@ export function ChannelAffinitySection(props: Props) {
         <SettingsPageActionsPortal>
           <Button
             variant={editMode === 'visual' ? 'default' : 'outline'}
-            size='sm'
             onClick={editMode === 'json' ? switchToVisualMode : undefined}
           >
             {t('Visual')}
           </Button>
           <Button
             variant={editMode === 'json' ? 'default' : 'outline'}
-            size='sm'
             onClick={editMode === 'visual' ? switchToJsonMode : undefined}
           >
             JSON
           </Button>
           <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant='outline' size='sm' />}
-            >
+            <DropdownMenuTrigger render={<Button variant='outline' />}>
               <Plus className='mr-1 h-3 w-3' />
               {t('Add Rule')}
             </DropdownMenuTrigger>
@@ -528,16 +524,15 @@ export function ChannelAffinitySection(props: Props) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant='outline' size='sm' onClick={handleFillTemplates}>
+          <Button variant='outline' onClick={handleFillTemplates}>
             <FileText className='mr-1 h-3 w-3' />
             {t('Fill Templates')}
           </Button>
-          <Button size='sm' onClick={handleSave} disabled={saving}>
-            {saving ? t('Saving...') : t('Save')}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? t('Saving...') : t('Save Changes')}
           </Button>
           <Button
             variant='outline'
-            size='sm'
             onClick={refreshCache}
             disabled={cacheLoading}
           >
@@ -548,7 +543,6 @@ export function ChannelAffinitySection(props: Props) {
           </Button>
           <Button
             variant='destructive'
-            size='sm'
             onClick={() => setClearAllDialogOpen(true)}
           >
             {t('Clear All Cache')}
@@ -564,6 +558,7 @@ export function ChannelAffinitySection(props: Props) {
         {/* Rules Table or JSON Editor */}
         {editMode === 'visual' ? (
           <StaticDataTable
+            mobileCards
             tableClassName='min-w-max'
             data={rules}
             emptyClassName='text-muted-foreground py-8'

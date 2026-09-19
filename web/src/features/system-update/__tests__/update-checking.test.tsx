@@ -398,13 +398,13 @@ describe('version label presentation', () => {
     ).not.toBeInTheDocument()
   })
 
-  test('shows an unknown-version label when the server has not supplied a version', async () => {
+  test('keeps the unknown-version label out of the visible chip while retaining the accessible name', async () => {
     client.setQueryData(STATUS_QUERY_KEY, { version: '' })
     render(<SystemUpdateAction presentation='version' />, { wrapper: Wrapper })
     const trigger = screen.getByRole('button', {
       name: 'System updates, current version: Unknown version',
     })
-    expect(within(trigger).getByText('Unknown version')).toBeInTheDocument()
+    expect(within(trigger).queryByText('Unknown version')).toBeNull()
     await waitFor(() => expect(trigger).toHaveAttribute('aria-busy', 'false'))
     expect(
       within(trigger).queryByText('Update available')

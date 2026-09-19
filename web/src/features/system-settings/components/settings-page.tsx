@@ -72,7 +72,7 @@ function SettingsPageFrame(props: SettingsPageFrameProps) {
             <span className='truncate'>{props.title}</span>
             <span
               ref={setTitleStatusContainer}
-              className='inline-flex min-w-0 shrink-0 items-center'
+              className='inline-flex min-w-0 items-center overflow-hidden'
             />
           </span>
         </SectionPageLayout.Title>
@@ -83,7 +83,7 @@ function SettingsPageFrame(props: SettingsPageFrameProps) {
           />
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
-          <div className='flex h-full min-h-0 w-full flex-col gap-4'>
+          <div className='bg-card text-card-foreground border-border/80 flex w-full shrink-0 flex-col gap-4 rounded-xl border p-4 shadow-sm sm:p-5'>
             {props.children}
           </div>
         </SectionPageLayout.Content>

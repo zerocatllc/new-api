@@ -303,6 +303,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
 
       {editMode === 'visual' ? (
         <StaticDataTable
+          mobileCards
           data={rows}
           getRowKey={(row) => row.id}
           emptyClassName='text-muted-foreground py-8'
@@ -386,7 +387,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
             (editMode === 'json' && !!jsonError)
           }
         >
-          {t('Save tool prices')}
+          {t('Save Changes')}
         </Button>
       </div>
     </div>

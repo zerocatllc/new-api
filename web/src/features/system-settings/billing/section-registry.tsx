@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { Coins, CreditCard, Gauge, Gift, Tags, UsersRound } from 'lucide-react'
+
 import { parseCurrencyDisplayType } from '@/lib/currency'
 
 import { CheckinSettingsSection } from '../general/checkin-settings-section'
@@ -57,6 +59,7 @@ const BILLING_SECTIONS = [
   {
     id: 'quota',
     titleKey: 'Quota Settings',
+    icon: Gauge,
     build: (settings: BillingSettings) => (
       <QuotaSettingsSection
         defaultValues={{
@@ -83,6 +86,7 @@ const BILLING_SECTIONS = [
   {
     id: 'currency',
     titleKey: 'Currency & Display',
+    icon: Coins,
     build: (settings: BillingSettings) => (
       <PricingSection
         defaultValues={{
@@ -106,6 +110,7 @@ const BILLING_SECTIONS = [
   {
     id: 'model-pricing',
     titleKey: 'Model Pricing',
+    icon: Tags,
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
         titleKey='Model Pricing'
@@ -119,6 +124,7 @@ const BILLING_SECTIONS = [
   {
     id: 'group-pricing',
     titleKey: 'Group Pricing',
+    icon: UsersRound,
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
         titleKey='Group Pricing'
@@ -132,6 +138,7 @@ const BILLING_SECTIONS = [
   {
     id: 'payment',
     titleKey: 'Payment Gateway',
+    icon: CreditCard,
     build: (settings: BillingSettings) => (
       <PaymentSettingsSection
         defaultValues={{
@@ -192,6 +199,7 @@ const BILLING_SECTIONS = [
   {
     id: 'checkin',
     titleKey: 'Check-in Rewards',
+    icon: Gift,
     build: (settings: BillingSettings) => (
       <CheckinSettingsSection
         defaultValues={{

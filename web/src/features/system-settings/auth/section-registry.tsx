@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { Bot, Fingerprint, KeyRound, Puzzle, ScanFace } from 'lucide-react'
+
 import type { AuthSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 import { BasicAuthSection } from './basic-auth-section'
@@ -28,6 +30,7 @@ const AUTH_SECTIONS = [
   {
     id: 'basic-auth',
     titleKey: 'Basic Authentication',
+    icon: KeyRound,
     build: (settings: AuthSettings) => (
       <BasicAuthSection
         defaultValues={{
@@ -45,6 +48,7 @@ const AUTH_SECTIONS = [
   {
     id: 'oauth',
     titleKey: 'OAuth Integrations',
+    icon: Fingerprint,
     build: (settings: AuthSettings) => (
       <OAuthSection
         serverAddress={settings.ServerAddress}
@@ -82,6 +86,7 @@ const AUTH_SECTIONS = [
   {
     id: 'passkey',
     titleKey: 'Passkey Authentication',
+    icon: ScanFace,
     build: (settings: AuthSettings) => (
       <PasskeySection
         defaultValues={{
@@ -104,6 +109,7 @@ const AUTH_SECTIONS = [
   {
     id: 'bot-protection',
     titleKey: 'Bot Protection',
+    icon: Bot,
     build: (settings: AuthSettings) => (
       <BotProtectionSection
         defaultValues={{
@@ -117,6 +123,7 @@ const AUTH_SECTIONS = [
   {
     id: 'custom-oauth',
     titleKey: 'Custom OAuth',
+    icon: Puzzle,
     build: (settings: AuthSettings) => (
       <CustomOAuthSection serverAddress={settings.ServerAddress} />
     ),

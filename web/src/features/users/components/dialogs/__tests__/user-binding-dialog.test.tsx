@@ -269,8 +269,14 @@ describe('UserBindingDialog shared status updates', () => {
       renderWithQueryClient(
         <UserBindingDialog open userId={7} onOpenChange={() => undefined} />
       )
-      await waitFor(() => expect(get).toHaveBeenCalledWith('/api/status'))
+      await waitFor(() =>
+        expect(get).toHaveBeenCalledWith('/api/status', {
+          skipBusinessError: true,
+          skipErrorHandler: true,
+        })
+      )
       expect(screen.queryByText('bound-user (ID: 7)')).not.toBeInTheDocument()
+      expect(screen.getByRole('status')).toHaveTextContent('Loading...')
       await act(async () => {
         if (outcome === 'success') {
           resolveStatus({
@@ -279,6 +285,7 @@ describe('UserBindingDialog shared status updates', () => {
         } else rejectStatus(new Error('Status unavailable'))
       })
       await screen.findByText('bound-user (ID: 7)')
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
       expect(screen.getByText('github-user')).toBeInTheDocument()
     }
   )

@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { Info, Megaphone, PanelLeft, PanelTop } from 'lucide-react'
+
 import { SystemInfoSection } from '../general/system-info-section'
 import {
   parseHeaderNavModules,
@@ -33,6 +35,7 @@ const SITE_SECTIONS = [
   {
     id: 'system-info',
     titleKey: 'System Information',
+    icon: Info,
     build: (settings: SiteSettings) => (
       <SystemInfoSection
         defaultValues={{
@@ -54,6 +57,7 @@ const SITE_SECTIONS = [
   {
     id: 'notice',
     titleKey: 'System Notice',
+    icon: Megaphone,
     build: (settings: SiteSettings) => (
       <NoticeSection defaultValue={settings.Notice ?? ''} />
     ),
@@ -61,6 +65,7 @@ const SITE_SECTIONS = [
   {
     id: 'header-navigation',
     titleKey: 'Header navigation',
+    icon: PanelTop,
     build: (settings: SiteSettings) => {
       const headerNavConfig = parseHeaderNavModules(settings.HeaderNavModules)
       const headerNavSerialized = serializeHeaderNavModules(headerNavConfig)
@@ -75,6 +80,7 @@ const SITE_SECTIONS = [
   {
     id: 'sidebar-modules',
     titleKey: 'Sidebar modules',
+    icon: PanelLeft,
     build: (settings: SiteSettings) => {
       const sidebarConfig = parseSidebarModulesAdmin(
         settings.SidebarModulesAdmin

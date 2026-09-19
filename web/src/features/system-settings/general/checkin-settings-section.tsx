@@ -119,7 +119,6 @@ export function CheckinSettingsSection({
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending || isSubmitting}
             isSaveDisabled={!isDirty}
-            saveLabel='Save check-in settings'
           />
           <FormField
             control={form.control}

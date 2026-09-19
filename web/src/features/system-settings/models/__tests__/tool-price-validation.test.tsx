@@ -46,7 +46,7 @@ describe('tool price validation', () => {
     const priceInput = screen.getByRole('spinbutton', {
       name: 'Price ($/1K calls): web_search',
     })
-    const saveButton = screen.getByRole('button', { name: 'Save tool prices' })
+    const saveButton = screen.getByRole('button', { name: 'Save Changes' })
 
     fireEvent.change(priceInput, { target: { value: '' } })
 
