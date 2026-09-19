@@ -141,7 +141,8 @@ async function rsaOaepEncrypt(
 
   // Web Crypto is restricted to secure contexts in browsers. Lazy-loading
   // forge keeps the normal HTTPS bundle small while supporting HTTP intranets.
-  const forge = await import('node-forge')
+  const forgeModule = await import('node-forge')
+  const forge = forgeModule.default ?? forgeModule
   const publicKey = forge.pki.publicKeyFromPem(publicKeyPEM)
   const plaintext = forge.util.encodeUtf8(password)
   if (plaintext.length > publicKey.n.bitLength() / 8 - 66) {

@@ -16,7 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+  act,
+  render as rtlRender,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -30,6 +37,12 @@ import { TwoFABackupDialog } from '../components/dialogs/two-fa-backup-dialog'
 import { TwoFADisableDialog } from '../components/dialogs/two-fa-disable-dialog'
 
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
+
+function render(ui: Parameters<typeof rtlRender>[0]) {
+  return rtlRender(
+    <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>
+  )
+}
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@tanstack/react-router')>()),
   useNavigate: () => navigate,

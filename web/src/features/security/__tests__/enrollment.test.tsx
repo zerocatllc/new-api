@@ -17,7 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  act,
+  render as rtlRender,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -34,6 +40,12 @@ const credentialsDescriptor = Object.getOwnPropertyDescriptor(
   navigator,
   'credentials'
 )
+
+function render(ui: Parameters<typeof rtlRender>[0]) {
+  return rtlRender(
+    <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>
+  )
+}
 const expiresAt = () => Math.floor(Date.now() / 1000) + 300
 const credential = {
   id: 'credential',

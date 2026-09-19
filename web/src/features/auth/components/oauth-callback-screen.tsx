@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Loader2, Send, Shield, UserRound, type LucideIcon } from 'lucide-react'
+import { Send, Shield, UserRound, type LucideIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SiGithub, SiLinux, SiWechat } from 'react-icons/si'
+
+import { LoadingState } from '@/components/loading-state'
 
 import { AuthLayout } from '../auth-layout'
 
@@ -115,9 +117,12 @@ export function OAuthCallbackScreen({
         </div>
 
         <div className='space-y-4 text-center'>
-          <div className='flex items-center justify-center gap-2 text-sm font-medium'>
-            <Loader2 className='h-4 w-4 animate-spin' />
-            <span>{t('Processing OAuth response...')}</span>
+          <div className='flex items-center justify-center text-sm font-medium'>
+            <LoadingState
+              inline
+              size='sm'
+              message={t('Processing OAuth response...')}
+            />
           </div>
           <p className='text-muted-foreground text-sm'>{secondaryNote}</p>
           <p className='text-muted-foreground text-xs'>

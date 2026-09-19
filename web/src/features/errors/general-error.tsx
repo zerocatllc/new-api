@@ -44,7 +44,8 @@ export function GeneralError({
 }: GeneralErrorProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { history } = useRouter()
+  const router = useRouter()
+  const { history } = router
   const status = getHttpStatus(error)
   const isRateLimited = status === 429
   const title = isRateLimited
@@ -73,6 +74,9 @@ export function GeneralError({
         )}
         {!minimal && (
           <div className='mt-6 flex flex-wrap justify-center gap-4'>
+            <Button onClick={() => void router.invalidate()}>
+              {t('Retry')}
+            </Button>
             <Button variant='outline' onClick={() => history.go(-1)}>
               {t('Go Back')}
             </Button>

@@ -168,7 +168,8 @@ it.each([
         <AuditLogViewer scope='self' />
       </QueryClientProvider>
     )
-    const cell = await screen.findByRole('cell', { name: new RegExp(headline) })
+    await screen.findByText(headline, { exact: true })
+    const cell = screen.getByRole('cell', { name: new RegExp(headline) })
     expect(cell).toHaveTextContent(headline)
     if ('id' in params || 'target_user_id' in params) {
       expect(cell).toHaveTextContent('(ID: 11)')
@@ -383,7 +384,8 @@ it.each([
         </QueryClientProvider>
       </I18nextProvider>
     )
-    expect(await screen.findByRole('cell', { name: single })).toBeVisible()
+    await screen.findByText(single, { exact: true })
+    expect(screen.getByRole('cell', { name: single })).toBeVisible()
     expect(screen.getByRole('cell', { name: batch })).toBeVisible()
     expect(
       screen.queryByRole('cell', { name: 'channel.status_update' })
@@ -468,7 +470,7 @@ it('filters own access history by result, generation and time and resets paginat
     })
   )
   expect(screen.queryByLabelText('Username')).not.toBeInTheDocument()
-  expect(screen.getByRole('table').style.minWidth).toMatch(/max\(100%, \d+px\)/)
+  expect(screen.getByRole('table').style.minWidth).toBe('100%')
 })
 
 it('a failed history query exposes retry and no empty history claim', async () => {

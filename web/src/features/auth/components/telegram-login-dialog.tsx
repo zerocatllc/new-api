@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
-import { Spinner } from '@/components/ui/spinner'
+import { LoadingState } from '@/components/loading-state'
 
 type TelegramLoginDialogProps = {
   open: boolean
@@ -94,7 +94,9 @@ export function TelegramLoginDialog(props: TelegramLoginDialogProps) {
         className='flex min-h-12 items-center justify-center'
         aria-busy={widgetState === 'loading' || props.pending}
       >
-        {(widgetState === 'loading' || props.pending) && <Spinner />}
+        {(widgetState === 'loading' || props.pending) && (
+          <LoadingState inline size='sm' />
+        )}
         {widgetState === 'failed' && (
           <p className='text-destructive text-sm'>{t('Login failed')}</p>
         )}
