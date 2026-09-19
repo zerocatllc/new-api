@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQueryClient } from '@tanstack/react-query'
 import type { Row } from '@tanstack/react-table'
-import { Eye, EyeOff, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -28,6 +28,12 @@ import {
   DropdownMenuItem,
   DropdownMenuShortcut,
 } from '@/components/ui/dropdown-menu'
+import { Switch } from '@/components/ui/switch'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useCanEditModelPricing } from '@/features/model-pricing/api'
 
 import { handleToggleModelStatus, isModelEnabled } from '../lib'
@@ -89,13 +95,27 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       )}
 
       {model.id > 0 && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className='inline-flex items-center px-1'
+                onClick={(event) => event.stopPropagation()}
+              />
+            }
+          >
+            <Switch
+              checked={isEnabled}
+              onCheckedChange={handleToggleStatus}
+              aria-label={toggleLabel}
+            />
+          </TooltipTrigger>
+          <TooltipContent>{toggleLabel}</TooltipContent>
+        </Tooltip>
+      )}
+
+      {model.id > 0 && (
         <DataTableRowActionMenu ariaLabel={t('Open menu')}>
-          <DropdownMenuItem onClick={handleToggleStatus}>
-            {toggleLabel}
-            <DropdownMenuShortcut>
-              {isEnabled ? <EyeOff size={16} /> : <Eye size={16} />}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault()

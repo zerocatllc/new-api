@@ -61,8 +61,12 @@ export function AnnouncementsPanel() {
     <PanelWrapper
       title={
         <span className='flex items-center gap-2'>
-          <IconBadge tone='warning' size='sm'>
-            <Megaphone />
+          <IconBadge
+            tone='neutral'
+            size='sm'
+            className='bg-background text-warning ring-warning/35 dark:bg-warning/10 dark:ring-warning/30 ring-1 ring-inset'
+          >
+            <Megaphone strokeWidth={1.75} />
           </IconBadge>
           {t('Announcements')}
         </span>

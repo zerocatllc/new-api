@@ -40,6 +40,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
+import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { IconBadge } from '@/components/ui/icon-badge'
@@ -178,11 +179,7 @@ export function ViewLogsDialog({
   }
   let logsContent: ReactNode
   if (isLoadingContainers || isLoadingLogs) {
-    logsContent = (
-      <div className='flex items-center justify-center py-8'>
-        <Loader2 className='h-6 w-6 animate-spin text-gray-400' />
-      </div>
-    )
+    logsContent = <LoadingState className='min-h-32' />
   } else if (containers.length === 0) {
     logsContent = (
       <div className='py-8 text-center text-gray-400'>{t('No containers')}</div>

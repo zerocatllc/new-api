@@ -16,9 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Plus, MoreHorizontal, List, AlertCircle } from 'lucide-react'
+import { MoreHorizontal, List, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { PagePrimaryAction } from '@/components/page-primary-action'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -69,10 +70,9 @@ export function ModelsPrimaryButtons() {
         </Button>
       )}
       {/* Create Model */}
-      <Button onClick={handleCreateModel} size='sm'>
-        <Plus className='h-4 w-4' />
+      <PagePrimaryAction onClick={handleCreateModel}>
         {t('Add Model')}
-      </Button>
+      </PagePrimaryAction>
 
       {/* More Actions */}
       <DropdownMenu>
@@ -83,7 +83,7 @@ export function ModelsPrimaryButtons() {
         >
           <MoreHorizontal className='h-4 w-4' />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-56'>
+        <DropdownMenuContent align='end'>
           <DropdownMenuItem onClick={handleMissingModels}>
             {t('Missing Models')}
             <DropdownMenuShortcut>

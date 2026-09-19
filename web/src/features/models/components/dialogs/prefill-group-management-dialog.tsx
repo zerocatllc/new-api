@@ -33,6 +33,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { StaticDataTable } from '@/components/data-table/static/static-data-table'
 import { StaticRowActions } from '@/components/data-table/static/static-row-actions'
 import { Dialog } from '@/components/dialog'
+import { LoadingState } from '@/components/loading-state'
 import { StatusBadge } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -163,12 +164,10 @@ export function PrefillGroupManagementDialog({
   let groupsContent: ReactNode
   if (isLoading) {
     groupsContent = (
-      <div className='flex flex-col items-center justify-center gap-2 py-12 text-center'>
-        <Loader2 className='text-muted-foreground h-6 w-6 animate-spin' />
-        <p className='text-muted-foreground text-sm'>
-          {t('Fetching prefill groups...')}
-        </p>
-      </div>
+      <LoadingState
+        className='min-h-40'
+        message={t('Fetching prefill groups...')}
+      />
     )
   } else if (normalizedGroups.length === 0) {
     groupsContent = (

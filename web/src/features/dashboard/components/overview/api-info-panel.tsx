@@ -20,6 +20,7 @@ import { Route } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { StatusBadge } from '@/components/status-badge'
 import { IconBadge } from '@/components/ui/icon-badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useApiInfo } from '@/features/dashboard/hooks/use-status-data'
@@ -51,8 +52,12 @@ export function ApiInfoPanel() {
     <PanelWrapper
       title={
         <span className='flex items-center gap-2'>
-          <IconBadge tone='info' size='sm'>
-            <Route />
+          <IconBadge
+            tone='neutral'
+            size='sm'
+            className='bg-background text-info ring-info/35 dark:bg-info/10 dark:ring-info/30 ring-1 ring-inset'
+          >
+            <Route strokeWidth={1.75} />
           </IconBadge>
           {t('API Info')}
         </span>
@@ -63,12 +68,22 @@ export function ApiInfoPanel() {
       emptyMessage={t('No API routes configured')}
       height='h-72'
       contentClassName='p-0'
+      headerActions={
+        list.length > 0 ? (
+          <StatusBadge
+            label={`${list.length} ${t('API Addresses')}`}
+            variant='info'
+            copyable={false}
+            className='text-xs font-normal'
+          />
+        ) : null
+      }
     >
       <ScrollArea className='h-72'>
         <div>
           {list.map((item: ApiInfoItem, idx: number) => (
             <div
-              key={item.url}
+              key={item.id ?? `${item.url}-${idx}`}
               className={
                 idx < list.length - 1 ? 'border-border/60 border-b' : ''
               }

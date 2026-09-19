@@ -28,8 +28,7 @@ import {
   formatLatency,
   formatThroughput,
   formatUptimePct,
-  getSuccessRateDotClass,
-  getSuccessRateTextClass,
+  getSuccessRateLevel,
 } from '@/features/performance-metrics/lib/format'
 import type { PerfModelSummary } from '@/features/performance-metrics/types'
 import { requireServerSuccess } from '@/lib/server-error-message'
@@ -37,6 +36,25 @@ import { cn } from '@/lib/utils'
 
 const PERFORMANCE_WINDOW_HOURS = 24
 const TOP_MODEL_LIMIT = 6
+
+// Success-rate coloring uses the theme's semantic tokens (success / warning /
+// destructive) so the panel tracks the active palette, mirroring the reference
+// dashboard. Thresholds stay sourced from the shared getSuccessRateLevel.
+function rateTextClass(rate: number): string {
+  const level = getSuccessRateLevel(rate)
+  if (level === 'excellent' || level === 'good') return 'text-success'
+  if (level === 'warning') return 'text-warning'
+  if (level === 'critical') return 'text-destructive'
+  return 'text-muted-foreground'
+}
+
+function rateDotClass(rate: number): string {
+  const level = getSuccessRateLevel(rate)
+  if (level === 'excellent' || level === 'good') return 'bg-success'
+  if (level === 'warning') return 'bg-warning'
+  if (level === 'critical') return 'bg-destructive'
+  return 'bg-muted-foreground'
+}
 
 type WeightedMetric = 'avg_latency_ms' | 'avg_tps' | 'success_rate'
 
@@ -96,9 +114,9 @@ export function PerformanceHealthPanel() {
   const hasData = models.length > 0
 
   return (
-    <section className='bg-card h-full overflow-hidden rounded-2xl border shadow-xs'>
+    <section className='bg-card h-full overflow-hidden rounded-xl border'>
       <div className='flex items-center gap-2 border-b px-4 py-3 sm:px-5'>
-        <IconBadge tone='success' size='sm'>
+        <IconBadge tone='brand' size='sm'>
           <HeartPulse />
         </IconBadge>
         <h3 className='text-sm font-semibold'>{t('Performance health')}</h3>
@@ -114,28 +132,28 @@ export function PerformanceHealthPanel() {
             label={t('Success rate')}
             value={formatUptimePct(summary.successRate)}
             loading={loading}
-            valueClassName={getSuccessRateTextClass(summary.successRate)}
-            tone='success'
+            valueClassName={rateTextClass(summary.successRate)}
+            tone='neutral'
           />
           <MetricCell
             icon={Timer}
             label={t('Average latency')}
             value={formatLatency(summary.avgLatencyMs)}
             loading={loading}
-            tone='warning'
+            tone='neutral'
           />
           <MetricCell
             icon={Gauge}
             label={t('Throughput')}
             value={formatThroughput(summary.avgTps)}
             loading={loading}
-            tone='info'
+            tone='neutral'
           />
         </div>
 
         {loading ? (
-          <div className='space-y-1'>
-            {['success', 'latency', 'throughput'].map((key) => (
+          <div className='grid grid-cols-2 gap-1'>
+            {['first', 'second', 'third', 'fourth'].map((key) => (
               <Skeleton key={key} className='h-5 w-full rounded' />
             ))}
           </div>
@@ -158,14 +176,14 @@ export function PerformanceHealthPanel() {
                       <span
                         className={cn(
                           'size-1.5 rounded-full',
-                          getSuccessRateDotClass(model.success_rate)
+                          rateDotClass(model.success_rate)
                         )}
                         aria-hidden='true'
                       />
                       <span
                         className={cn(
                           'font-mono text-[11px] font-semibold tabular-nums',
-                          getSuccessRateTextClass(model.success_rate)
+                          rateTextClass(model.success_rate)
                         )}
                       >
                         {formatUptimePct(model.success_rate)}

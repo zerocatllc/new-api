@@ -50,7 +50,7 @@ export function useModelStatCardsConfig(): StatCardConfig[] {
       title: t('Total Count'),
       description: t('Statistical count'),
       icon: Hash,
-      iconTone: 'info',
+      iconTone: 'neutral',
       getValue: (stat) => stat?.rpm ?? 0,
     },
     {
@@ -58,7 +58,7 @@ export function useModelStatCardsConfig(): StatCardConfig[] {
       title: t('Total Quota'),
       description: t('Statistical quota'),
       icon: Coins,
-      iconTone: 'success',
+      iconTone: 'neutral',
       getValue: (stat) => stat?.quota ?? 0,
     },
     {
@@ -66,7 +66,7 @@ export function useModelStatCardsConfig(): StatCardConfig[] {
       title: t('Total Tokens'),
       description: t('Statistical tokens'),
       icon: Layers,
-      iconTone: 'chart-4',
+      iconTone: 'neutral',
       getValue: (stat) => stat?.tpm ?? 0,
     },
     {
@@ -74,7 +74,7 @@ export function useModelStatCardsConfig(): StatCardConfig[] {
       title: t('Average RPM'),
       description: t('Requests per minute'),
       icon: Gauge,
-      iconTone: 'chart-2',
+      iconTone: 'neutral',
       getValue: (stat, timeRangeMinutes = 1) =>
         safeDivide(stat?.rpm ?? 0, timeRangeMinutes),
     },
@@ -83,7 +83,7 @@ export function useModelStatCardsConfig(): StatCardConfig[] {
       title: t('Average TPM'),
       description: t('Tokens per minute'),
       icon: Zap,
-      iconTone: 'warning',
+      iconTone: 'neutral',
       getValue: (stat, timeRangeMinutes = 1) =>
         safeDivide(stat?.tpm ?? 0, timeRangeMinutes),
     },

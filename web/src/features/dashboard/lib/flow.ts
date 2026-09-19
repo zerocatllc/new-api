@@ -33,7 +33,7 @@ import type {
   ProcessedFlowData,
 } from '@/features/dashboard/types'
 
-import { getDashboardChartColors } from './charts'
+import { DASHBOARD_TOOLTIP_STYLE, getDashboardChartColors } from './charts'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type VChartSpec = Record<string, any>
@@ -1306,6 +1306,7 @@ export function buildFlowSankeySpec(
     tooltip: {
       trigger: 'hover',
       activeType: 'mark',
+      style: DASHBOARD_TOOLTIP_STYLE,
       dimension: { visible: false },
       group: { visible: false },
       mark: {

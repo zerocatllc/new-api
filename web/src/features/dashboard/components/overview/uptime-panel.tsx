@@ -33,10 +33,10 @@ import { cn } from '@/lib/utils'
 import { PanelWrapper } from '../ui/panel-wrapper'
 
 const STATUS_COLOR_MAP: Record<number, string> = {
-  1: 'bg-emerald-500',
-  0: 'bg-red-500',
-  2: 'bg-amber-500',
-  3: 'bg-blue-500',
+  1: 'bg-success',
+  0: 'bg-destructive',
+  2: 'bg-warning',
+  3: 'bg-info',
 }
 const DEFAULT_STATUS_COLOR = 'bg-muted-foreground/40'
 
@@ -98,8 +98,12 @@ export function UptimePanel() {
     <PanelWrapper
       title={
         <span className='flex items-center gap-2'>
-          <IconBadge tone='success' size='sm'>
-            <Activity />
+          <IconBadge
+            tone='neutral'
+            size='sm'
+            className='bg-background text-success ring-success/35 dark:bg-success/10 dark:ring-success/30 ring-1 ring-inset'
+          >
+            <Activity strokeWidth={1.75} />
           </IconBadge>
           {t('Uptime')}
         </span>

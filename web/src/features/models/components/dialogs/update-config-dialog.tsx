@@ -27,6 +27,7 @@ import { z } from 'zod'
 
 import { Dialog } from '@/components/dialog'
 import { JsonCodeEditor } from '@/components/json-code-editor'
+import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -247,9 +248,7 @@ export function UpdateConfigDialog({
       }
     >
       {isLoading ? (
-        <div className='flex items-center justify-center py-10'>
-          <Loader2 className='text-muted-foreground h-6 w-6 animate-spin' />
-        </div>
+        <LoadingState className='min-h-40' />
       ) : (
         <div className='max-h-[calc(100dvh-8.5rem)] overflow-y-auto py-2 pr-1 sm:max-h-[72vh]'>
           <Form {...form}>

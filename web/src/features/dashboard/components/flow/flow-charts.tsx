@@ -547,7 +547,7 @@ export function FlowCharts(props: FlowChartsProps) {
                     render={
                       <button
                         type='button'
-                        className='text-muted-foreground/60 hover:text-foreground flex size-5 shrink-0 items-center justify-center rounded-md'
+                        className='text-muted-foreground/60 hover:text-foreground flex size-6 shrink-0 items-center justify-center rounded-md'
                         aria-label={t('Flow width metric')}
                       />
                     }
@@ -666,10 +666,10 @@ export function FlowCharts(props: FlowChartsProps) {
         </div>
       </div>
 
-      <div className='overflow-hidden rounded-lg border'>
+      <div className='bg-card overflow-hidden rounded-lg border shadow-xs'>
         <div className='flex w-full flex-col gap-2 border-b px-3 py-2 sm:px-5 sm:py-3 lg:flex-row lg:items-center lg:justify-between'>
           <div className='flex min-w-0 items-center gap-2'>
-            <IconBadge tone='info' size='sm'>
+            <IconBadge tone='brand' size='sm'>
               <GitBranch />
             </IconBadge>
             <div className='text-sm font-semibold'>{chartTitle}</div>

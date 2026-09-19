@@ -41,6 +41,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { Dialog } from '@/components/dialog'
+import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -192,11 +193,7 @@ export function ViewDetailsDialog({
 
         <Separator />
 
-        {isDetailsLoading ? (
-          <div className='flex items-center justify-center py-10'>
-            <Loader2 className='text-muted-foreground h-6 w-6 animate-spin' />
-          </div>
-        ) : null}
+        {isDetailsLoading ? <LoadingState className='min-h-40' /> : null}
         {showDetailsError ? (
           <div className='text-muted-foreground py-10 text-center text-sm'>
             {detailsRes?.message || t('Failed to fetch deployment details')}

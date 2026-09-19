@@ -215,6 +215,7 @@ export interface UserChartsFilters {
 // ============================================================================
 
 export interface ApiInfoItem {
+  id?: number
   url: string
   route: string
   description: string

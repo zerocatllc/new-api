@@ -20,13 +20,14 @@ export function normalizeDeploymentStatus(status: unknown) {
   return typeof status === 'string' ? status.trim().toLowerCase() : ''
 }
 
+function toMinutesValue(mins: unknown): number {
+  if (typeof mins === 'string') return Number(mins)
+  if (typeof mins === 'number') return mins
+  return Number.NaN
+}
+
 export function formatRemainingMinutes(mins: unknown) {
-  const n =
-    typeof mins === 'string'
-      ? Number(mins)
-      : typeof mins === 'number'
-        ? mins
-        : NaN
+  const n = toMinutesValue(mins)
   if (!Number.isFinite(n)) return null
 
   const total = Math.max(0, Math.round(n))

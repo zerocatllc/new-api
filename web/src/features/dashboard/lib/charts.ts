@@ -27,6 +27,12 @@ import type {
 import { getCurrencyDisplay } from '@/lib/currency'
 import { formatChartTime, type TimeGranularity } from '@/lib/time'
 
+const TREND_INTERVAL_SECONDS_BY_GRANULARITY: Record<TimeGranularity, number> = {
+  week: 604800,
+  day: 86400,
+  hour: 3600,
+}
+
 type TFunction = (key: string) => string
 type TooltipLineItem = {
   key: string
@@ -43,9 +49,9 @@ export function getDashboardChartColors(domainLength: number): string[] {
   const scheme =
     vchartDefaultDataScheme.find(
       (item) => !item.maxDomainLength || domainLength <= item.maxDomainLength
-    ) ?? vchartDefaultDataScheme[vchartDefaultDataScheme.length - 1]
+    ) ?? vchartDefaultDataScheme.at(-1)
 
-  return scheme.scheme.filter(
+  return (scheme?.scheme ?? []).filter(
     (color): color is string => typeof color === 'string'
   )
 }
@@ -58,10 +64,26 @@ function renderQuotaCompat(rawQuota: number, digits = 4): string {
   const symbol = 'symbol' in meta ? meta.symbol : '$'
   const value = usd * rate
   const fixed = value.toFixed(digits)
-  if (parseFloat(fixed) === 0 && rawQuota > 0 && value > 0) {
+  if (Number.parseFloat(fixed) === 0 && rawQuota > 0 && value > 0) {
     return symbol + Math.pow(10, -digits).toFixed(digits)
   }
   return symbol + fixed
+}
+
+// Shared tooltip card styling for every dashboard chart: a larger rounded
+// panel, circular series markers, and roomier spacing/typography — brings the
+// VChart tooltip closer to the reference dashboard's card while staying on
+// VChart (per-spec `tooltip.style`, no theme/component changes).
+export const DASHBOARD_TOOLTIP_STYLE = {
+  panel: {
+    padding: { top: 12, bottom: 12, left: 14, right: 14 },
+    border: { radius: 12 },
+  },
+  shape: { shapeType: 'circle', size: 8, spacing: 8 },
+  spaceRow: 7,
+  titleLabel: { fontSize: 13, fontWeight: 'bold' },
+  keyLabel: { fontSize: 12 },
+  valueLabel: { fontSize: 12, fontWeight: 'bold' },
 }
 
 /**
@@ -126,7 +148,7 @@ export function processChartData(
             key: otherLabel,
             value: formatQuotaValue(otherSum),
             hasShape: true,
-            shapeType: 'square',
+            shapeType: 'circle',
             shapeFill: otherTooltipColor,
             shapeStroke: otherTooltipColor,
             shapeSize: 8,
@@ -234,10 +256,11 @@ export function processChartData(
     const tokens = Number(item.token_used) || 0
 
     // Aggregate by time and model
-    if (!timeModelMap.has(timeKey)) {
-      timeModelMap.set(timeKey, new Map())
+    let modelMap = timeModelMap.get(timeKey)
+    if (!modelMap) {
+      modelMap = new Map()
+      timeModelMap.set(timeKey, modelMap)
     }
-    const modelMap = timeModelMap.get(timeKey)!
     const existing = modelMap.get(model) || { quota: 0, count: 0, tokens: 0 }
     modelMap.set(model, {
       quota: existing.quota + quota,
@@ -258,10 +281,10 @@ export function processChartData(
     })
   })
 
-  const allModels = Array.from(modelTotalsMap.keys())
-  const sortedTimes = Array.from(timeModelMap.keys()).sort()
+  const allModels = [...modelTotalsMap.keys()]
+  const sortedTimes = [...timeModelMap.keys()].sort()
   const sortedModels = [...allModels].sort()
-  const modelColorDomain = Array.from(new Set([...sortedModels, otherLabel]))
+  const modelColorDomain = [...new Set([...sortedModels, otherLabel])]
   const modelColorRange = getDashboardChartColors(modelColorDomain.length)
   const otherColor = modelColorRange[modelColorDomain.indexOf(otherLabel)]
   const otherTooltipColor =
@@ -279,12 +302,7 @@ export function processChartData(
     const lastTime = Math.max(
       ...data.map((item) => Number(item.created_at) || 0)
     )
-    const intervalSec =
-      timeGranularity === 'week'
-        ? 604800
-        : timeGranularity === 'day'
-          ? 86400
-          : 3600
+    const intervalSec = TREND_INTERVAL_SECONDS_BY_GRANULARITY[timeGranularity]
     const padded = Array.from({ length: MAX_TREND_POINTS }, (_, i) =>
       formatChartTime(
         lastTime - (MAX_TREND_POINTS - 1 - i) * intervalSec,
@@ -295,17 +313,17 @@ export function processChartData(
   }
   const chartTimes = fillTimePoints(sortedTimes)
 
-  const totalTimes = Array.from(modelTotalsMap.values()).reduce(
+  const totalTimes = [...modelTotalsMap.values()].reduce(
     (sum, x) => sum + (Number(x.count) || 0),
     0
   )
-  const totalQuotaRaw = Array.from(modelTotalsMap.values()).reduce(
+  const totalQuotaRaw = [...modelTotalsMap.values()].reduce(
     (sum, x) => sum + (Number(x.quota) || 0),
     0
   )
 
   // Pie chart (model call count proportion)
-  const pieValues = Array.from(modelTotalsMap.entries())
+  const pieValues = [...modelTotalsMap.entries()]
     .map(([model, stats]) => ({
       type: model,
       value: Number(stats.count) || 0,
@@ -346,7 +364,7 @@ export function processChartData(
 
   // Area chart: top models by quota + "Other" bucket (too many series = unreadable)
   const MAX_AREA_MODELS = 15
-  const rankedQuotaModels = Array.from(modelTotalsMap.entries())
+  const rankedQuotaModels = [...modelTotalsMap.entries()]
     .map(([model, stats]) => ({
       Model: model,
       Quota: Number(stats.quota) || 0,
@@ -388,7 +406,7 @@ export function processChartData(
 
   // Line chart: model call trend (top models + "Other" bucket)
   const MAX_TREND_MODELS = 20
-  const rankedTrendModels = Array.from(modelTotalsMap.entries())
+  const rankedTrendModels = [...modelTotalsMap.entries()]
     .map(([model, stats]) => ({
       Model: model,
       Count: Number(stats.count) || 0,
@@ -432,7 +450,7 @@ export function processChartData(
 
   // Rank bar: model call count ranking (top 20 + "Other" bucket)
   const MAX_RANK_MODELS = 20
-  const allRankValues = Array.from(modelTotalsMap.entries())
+  const allRankValues = [...modelTotalsMap.entries()]
     .map(([model, stats]) => ({
       Model: model,
       Count: Number(stats.count) || 0,
@@ -475,6 +493,7 @@ export function processChartData(
       label: { visible: true },
       color: modelColor,
       tooltip: {
+        style: DASHBOARD_TOOLTIP_STYLE,
         mark: {
           content: [
             {
@@ -503,15 +522,10 @@ export function processChartData(
         },
       },
       tooltip: {
-        mark: {
-          content: [
-            {
-              key: (datum: Record<string, unknown>) => datum?.Model,
-              value: (datum: Record<string, unknown>) =>
-                formatQuotaValue(Number(datum?.rawQuota) || 0),
-            },
-          ],
-        },
+        style: DASHBOARD_TOOLTIP_STYLE,
+        // Suppress the single-segment mark tooltip so hovering any bar shows
+        // the full multi-model breakdown (dimension tooltip) at that time point.
+        mark: { visible: false },
         dimension: {
           content: [
             {
@@ -536,15 +550,9 @@ export function processChartData(
       legends: { visible: true, selectMode: 'single' },
       color: modelColor,
       tooltip: {
-        mark: {
-          content: [
-            {
-              key: (datum: Record<string, unknown>) => datum?.Model,
-              value: (datum: Record<string, unknown>) =>
-                formatQuotaValue(Number(datum?.rawQuota) || 0),
-            },
-          ],
-        },
+        style: DASHBOARD_TOOLTIP_STYLE,
+        // Same as the bar variant: always show the multi-model breakdown.
+        mark: { visible: false },
         dimension: {
           content: [
             {
@@ -553,9 +561,7 @@ export function processChartData(
                 Number(datum?.rawQuota) || 0,
             },
           ],
-          updateContent: makeTooltipDimensionUpdateContent({
-            collapseOverflow: false,
-          }),
+          updateContent: makeTooltipDimensionUpdateContent(),
         },
       },
       area: {
@@ -588,15 +594,10 @@ export function processChartData(
         text: tt('Call Trend'),
       },
       tooltip: {
-        mark: {
-          content: [
-            {
-              key: (datum: Record<string, unknown>) => datum?.Model,
-              value: (datum: Record<string, unknown>) =>
-                formatInt(Number(datum?.Count) || 0),
-            },
-          ],
-        },
+        style: DASHBOARD_TOOLTIP_STYLE,
+        // Suppress the single-point mark tooltip so the trend always shows the
+        // full multi-model breakdown (dimension tooltip) at that time point.
+        mark: { visible: false },
         dimension: {
           content: [
             {
@@ -605,12 +606,7 @@ export function processChartData(
                 Number(datum?.Count) || 0,
             },
           ],
-          updateContent: (
-            array: Array<{
-              key: string
-              value: string | number
-            }>
-          ) => {
+          updateContent: (array: TooltipLineItem[]) => {
             const modelItems = array.filter(
               (item) => !isOtherTooltipKey(item.key)
             )
@@ -620,19 +616,44 @@ export function processChartData(
             modelItems.sort(
               (a, b) => (Number(b.value) || 0) - (Number(a.value) || 0)
             )
-            array = [...modelItems, ...otherItems]
 
-            let sum = 0
-            for (let i = 0; i < array.length; i++) {
-              const v = Number(array[i].value) || 0
-              sum += v
-              array[i].value = formatInt(v)
+            // Total is summed before any top-N collapse so it always reflects
+            // every model at this time point.
+            const sum = [...modelItems, ...otherItems].reduce(
+              (acc, item) => acc + (Number(item.value) || 0),
+              0
+            )
+
+            // Collapse the long tail into "Other" so the trend tooltip stays
+            // compact, matching the consumption-distribution tooltip instead of
+            // listing every model.
+            let rows: TooltipLineItem[]
+            if (modelItems.length + otherItems.length > MAX_TOOLTIP_MODELS) {
+              const otherSum = [
+                ...modelItems.slice(MAX_TOOLTIP_MODELS),
+                ...otherItems,
+              ].reduce((acc, item) => acc + (Number(item.value) || 0), 0)
+              rows = [
+                ...modelItems.slice(0, MAX_TOOLTIP_MODELS),
+                {
+                  key: otherLabel,
+                  value: otherSum,
+                  hasShape: true,
+                  shapeType: 'circle',
+                  shapeFill: otherTooltipColor,
+                  shapeStroke: otherTooltipColor,
+                  shapeSize: 8,
+                },
+              ]
+            } else {
+              rows = [...modelItems, ...otherItems]
             }
-            array.unshift({
-              key: tt('Total:'),
-              value: formatInt(sum),
-            })
-            return array
+
+            for (const row of rows) {
+              row.value = formatInt(Number(row.value) || 0)
+            }
+            rows.unshift({ key: tt('Total:'), value: formatInt(sum) })
+            return rows
           },
         },
       },
@@ -670,6 +691,7 @@ export function processChartData(
         },
       },
       tooltip: {
+        style: DASHBOARD_TOOLTIP_STYLE,
         mark: {
           content: [
             {
@@ -757,9 +779,7 @@ export function processUserChartData(
     userQuotaTotal.set(username, prev + (Number(item.quota) || 0))
   })
 
-  const sorted = Array.from(userQuotaTotal.entries()).sort(
-    (a, b) => b[1] - a[1]
-  )
+  const sorted = [...userQuotaTotal.entries()].sort((a, b) => b[1] - a[1])
   const topUsers = sorted.slice(0, limit).map(([u]) => u)
   const topUserSet = new Set(topUsers)
   const totalQuota = sorted.slice(0, limit).reduce((s, [, q]) => s + q, 0)
@@ -787,12 +807,15 @@ export function processUserChartData(
     allTimePoints.add(timeKey)
     const user = item.username || 'unknown'
     if (!topUserSet.has(user)) return
-    if (!timeUserMap.has(timeKey)) timeUserMap.set(timeKey, new Map())
-    const map = timeUserMap.get(timeKey)!
+    let map = timeUserMap.get(timeKey)
+    if (!map) {
+      map = new Map()
+      timeUserMap.set(timeKey, map)
+    }
     map.set(user, (map.get(user) || 0) + (Number(item.quota) || 0))
   })
 
-  const sortedTimePoints = Array.from(allTimePoints).sort()
+  const sortedTimePoints = [...allTimePoints].sort()
   const trendValues: Array<{
     Time: string
     User: string
@@ -840,6 +863,7 @@ export function processUserChartData(
         { orient: 'bottom', type: 'linear', visible: false },
       ],
       tooltip: {
+        style: DASHBOARD_TOOLTIP_STYLE,
         mark: {
           content: [
             {
@@ -893,15 +917,10 @@ export function processUserChartData(
         },
       ],
       tooltip: {
-        mark: {
-          content: [
-            {
-              key: (datum: Record<string, unknown>) => datum?.User,
-              value: (datum: Record<string, unknown>) =>
-                formatVal(Number(datum?.rawQuota) || 0),
-            },
-          ],
-        },
+        style: DASHBOARD_TOOLTIP_STYLE,
+        // Suppress the single-point mark tooltip so the trend always shows the
+        // full multi-user breakdown (dimension tooltip) at that time point.
+        mark: { visible: false },
         dimension: {
           content: [
             {

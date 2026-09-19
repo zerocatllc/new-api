@@ -208,7 +208,7 @@ export function FlowNodeFilterControl(props: FlowNodeFilterControlProps) {
             </span>
             <button
               type='button'
-              className='hover:bg-muted-foreground/15 flex size-4 shrink-0 items-center justify-center rounded-sm'
+              className='hover:bg-muted-foreground/15 -my-1 flex size-6 shrink-0 items-center justify-center rounded-sm'
               aria-label={t('Remove node filter')}
               onClick={() =>
                 props.onRemoveNode({ kind: option.kind, id: option.id })
