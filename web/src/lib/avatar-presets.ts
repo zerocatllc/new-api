@@ -18,6 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useSyncExternalStore } from 'react'
 
+import { useAuthStore } from '@/stores/auth-store'
+
 // Illustrated cat avatar presets served from `public/avatars/cats/`.
 // Structure mirrors rix-api's `lib/avatar-presets.ts`; the difference is
 // persistence: this backend has no user `avatar` column, so the chosen preset
@@ -91,20 +93,28 @@ export function avatarUrl(name?: string | null): string | null {
 const STORAGE_KEY = 'zerocat:self-avatar'
 const CHANGE_EVENT = 'zerocat:self-avatar-change'
 
-function readStored(): AvatarPreset | null {
+function getStorageKey(userId?: number): string | null {
+  return userId ? `${STORAGE_KEY}:${userId}` : null
+}
+
+function readStored(userId?: number): AvatarPreset | null {
   if (typeof window === 'undefined') return null
-  return resolveAvatarName(window.localStorage.getItem(STORAGE_KEY))
+  const key = getStorageKey(userId)
+  return key ? resolveAvatarName(window.localStorage.getItem(key)) : null
 }
 
 /** Persist the chosen preset (or clear it to fall back to the auto avatar). */
 export function setSelfAvatar(name: string | null): void {
   if (typeof window === 'undefined') return
+  const key = getStorageKey(useAuthStore.getState().auth.user?.id)
+  if (!key) return
   const preset = resolveAvatarName(name)
   if (preset) {
-    window.localStorage.setItem(STORAGE_KEY, preset)
+    window.localStorage.setItem(key, preset)
   } else {
-    window.localStorage.removeItem(STORAGE_KEY)
+    window.localStorage.removeItem(key)
   }
+  window.localStorage.removeItem(STORAGE_KEY)
   window.dispatchEvent(new Event(CHANGE_EVENT))
 }
 
@@ -119,5 +129,10 @@ function subscribe(callback: () => void): () => void {
 
 /** Reactive current-user avatar preset, or null when using the auto avatar. */
 export function useSelfAvatar(): AvatarPreset | null {
-  return useSyncExternalStore(subscribe, readStored, () => null)
+  const userId = useAuthStore((state) => state.auth.user?.id)
+  return useSyncExternalStore(
+    subscribe,
+    () => readStored(userId),
+    () => null
+  )
 }

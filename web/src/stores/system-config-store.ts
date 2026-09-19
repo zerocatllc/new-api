@@ -96,6 +96,22 @@ export const useSystemConfigStore = create<SystemConfigState>()(
     {
       name: 'system-config-storage',
       version: 1,
+      migrate: (persistedState) => {
+        const persisted = persistedState as
+          | { config?: Partial<SystemConfig> }
+          | undefined
+        const config = persisted?.config
+        return {
+          config: {
+            systemName: config?.systemName ?? DEFAULT_SYSTEM_NAME,
+            logo: config?.logo ?? DEFAULT_LOGO,
+            footerHtml: config?.footerHtml,
+            demoSiteEnabled: config?.demoSiteEnabled,
+            displayTokenStatEnabled: config?.displayTokenStatEnabled,
+            currency: { ...DEFAULT_CURRENCY_CONFIG, ...config?.currency },
+          },
+        }
+      },
       partialize: (state) => ({
         config: state.config,
       }),

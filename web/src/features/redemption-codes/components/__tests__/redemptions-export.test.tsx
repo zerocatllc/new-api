@@ -178,6 +178,20 @@ test('keeps names containing table delimiters and markup inside one Markdown cel
   )
 })
 
+test('guards formula-leading cells in tab-separated text exports', async () => {
+  const downloads = captureDownloads()
+  const user = userEvent.setup()
+  render(
+    <RedemptionsExportDialog
+      data={{ keys: ['+cmd'], name: '=2+2', quota: '@SUM(A1)' }}
+      onClose={() => undefined}
+    />
+  )
+  await user.click(screen.getByRole('checkbox', { name: 'Save as a file' }))
+  await user.click(screen.getByRole('button', { name: 'Done' }))
+  expect(await readDownload(downloads[0])).toBe("'=2+2\t'+cmd\t'@SUM(A1)\n")
+})
+
 test('successful batch creation opens export with returned codes and the configured currency', async () => {
   const downloads = captureDownloads()
   const user = userEvent.setup()

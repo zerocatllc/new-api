@@ -57,6 +57,13 @@ function dismissSplash(splash: HTMLElement) {
   return window.setTimeout(() => splash.remove(), SPLASH_FADE_MS)
 }
 
+function RootErrorComponent() {
+  useEffect(() => {
+    document.querySelector('#app-loading')?.remove()
+  }, [])
+  return <GeneralError />
+}
+
 function RootComponent() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -202,5 +209,5 @@ export const Route = createRootRouteWithContext<{
   },
   component: RootComponent,
   notFoundComponent: NotFoundError,
-  errorComponent: GeneralError,
+  errorComponent: RootErrorComponent,
 })

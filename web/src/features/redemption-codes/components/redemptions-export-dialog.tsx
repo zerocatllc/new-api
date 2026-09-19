@@ -62,7 +62,11 @@ export function RedemptionsExportDialog(props: RedemptionsExportDialogProps) {
       return row.map((value) => value.replaceAll(/[\t\r\n]+/g, ' '))
     })
 
-    let content = `${rows.map((row) => row.join('\t')).join('\n')}\n`
+    const guardFormula = (value: string) =>
+      /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+    let content = `${rows
+      .map((row) => row.map(guardFormula).join('\t'))
+      .join('\n')}\n`
     if (format === 'md') {
       const markdownRows = [headers, headers.map(() => '---'), ...rows]
       const markdownLines = markdownRows.map((row, index) => {
