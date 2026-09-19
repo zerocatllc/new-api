@@ -154,6 +154,28 @@ func UnmarshalBodyReusable(c *gin.Context, v any) error {
 	return nil
 }
 
+func UnmarshalBodyReusableStrict(c *gin.Context, v any) error {
+	storage, err := GetBodyStorage(c)
+	if err != nil {
+		return err
+	}
+	contentType := c.Request.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "application/json") {
+		return fmt.Errorf("strict decoding requires application/json, got %q", contentType)
+	}
+	if _, err := storage.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	if err := DecodeStrictJson(storage, v); err != nil {
+		return err
+	}
+	if _, err := storage.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	c.Request.Body = io.NopCloser(storage)
+	return nil
+}
+
 func SetContextKey(c *gin.Context, key constant.ContextKey, value any) {
 	c.Set(string(key), value)
 }

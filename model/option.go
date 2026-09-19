@@ -15,6 +15,7 @@ import (
 	"github.com/QuantumNous/new-api/setting/performance_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
+	"github.com/QuantumNous/new-api/setting/ticket_setting"
 	"gorm.io/gorm"
 )
 
@@ -59,6 +60,7 @@ func InitOptionMap() {
 	jsplugin.DefaultRegistry.SetEnabled(constant.TaskPluginEnabled)
 	common.OptionMap[setting.TaskPluginMarketplaceSourcesKey] = setting.TaskPluginMarketplaceSources2JsonString()
 	common.OptionMap[setting.TaskPluginDisabledFactoryKeysKey] = "[]"
+	common.OptionMap[OptionTicketSettings] = ticket_setting.BundleJSON()
 	jsplugin.DefaultRegistry.SetDisabledFactoryKeys(nil)
 	common.OptionMap["DataExportEnabled"] = strconv.FormatBool(common.DataExportEnabled)
 	common.OptionMap["ChannelDisableThreshold"] = strconv.FormatFloat(common.ChannelDisableThreshold, 'f', -1, 64)
@@ -313,6 +315,9 @@ func updateOptionMap(key string, value string) (err error) {
 	common.OptionMapRWMutex.Lock()
 	defer common.OptionMapRWMutex.Unlock()
 	common.OptionMap[key] = value
+	if key == OptionTicketSettings {
+		return ticket_setting.LoadBundle(value)
+	}
 
 	// 检查是否是模型配置 - 使用更规范的方式处理
 	if handleConfigUpdate(key, value) {

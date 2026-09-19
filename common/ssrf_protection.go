@@ -94,6 +94,10 @@ var privateIPv6Nets = func() []net.IPNet {
 	return nets
 }()
 
+func IsRestrictedIP(ip net.IP) bool {
+	return isPrivateIP(ip)
+}
+
 // isPrivateIP 检查IP是否为私有/保留/特殊用途地址
 func isPrivateIP(ip net.IP) bool {
 	if ip == nil {

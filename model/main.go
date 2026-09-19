@@ -333,6 +333,9 @@ func migrateDB() error {
 	if err := migrateOptionPrimaryKey(DB); err != nil {
 		common.SysError("failed to migrate options primary key: " + err.Error())
 	}
+	if err := migrateTicketDB(); err != nil {
+		return err
+	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -624,6 +627,124 @@ func migrateTokenModelLimitsToText() error {
 			return fmt.Errorf("failed to migrate %s.%s to text: %w", tableName, columnName, err)
 		}
 		common.SysLog(fmt.Sprintf("Successfully migrated %s.%s to text", tableName, columnName))
+	}
+	return nil
+}
+
+// migrateSubscriptionPlanPriceAmount migrates price_amount column from float/double to decimal(10,6)
+// This is safe to run multiple times - it checks the column type first
+// migrateTicketDB is the single ordered ticket migration path shared by
+// migrateDB and migrateDBFast: expand/backfill migrations run before
+// AutoMigrate so column additions and index replacement stay idempotent on
+// replay, and the public-id backfill runs after AutoMigrate has ensured the
+// column exists.
+func migrateTicketDB() error {
+	if err := migrateTicketCreateRequestOwner(); err != nil {
+		return err
+	}
+	if err := migrateTicketSoftDeleteColumns(); err != nil {
+		return err
+	}
+	if err := migrateTicketAttachmentPendingColumn(); err != nil {
+		return err
+	}
+	if err := DB.AutoMigrate(
+		&Ticket{},
+		&TicketMessage{},
+		&TicketReadCursor{},
+		&TicketAttachmentUpload{},
+		&TicketTag{},
+		&TicketCreateRequest{},
+	); err != nil {
+		return err
+	}
+	return BackfillTicketAttachmentPublicIDs()
+}
+
+// migrateTicketAttachmentPendingColumn is the expand migration for the
+// pending flag on upload provenance rows. The column-level default backfills
+// legacy rows to "ready" in the same statement that adds the column; the
+// struct tag itself carries no default, because gorm compares a declared
+// default against the database's normalized form ('0' vs 'false' on MySQL)
+// and would re-issue ALTER TABLE on every boot.
+func migrateTicketAttachmentPendingColumn() error {
+	if !DB.Migrator().HasTable(&TicketAttachmentUpload{}) {
+		return nil
+	}
+	if !DB.Migrator().HasColumn(&TicketAttachmentUpload{}, "pending") {
+		columnType := "boolean"
+		pendingCol := "`pending`"
+		if common.UsingMainDatabase(common.DatabaseTypeSQLite) {
+			columnType = "numeric"
+		}
+		if common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
+			pendingCol = `"pending"`
+		}
+		addSQL := fmt.Sprintf("ALTER TABLE ticket_attachment_uploads ADD COLUMN %s %s NOT NULL DEFAULT %s", pendingCol, columnType, commonFalseVal)
+		if err := DB.Exec(addSQL).Error; err != nil {
+			return fmt.Errorf("add ticket attachment pending column: %w", err)
+		}
+	}
+	if err := DB.Exec("UPDATE ticket_attachment_uploads SET pending = " + commonFalseVal + " WHERE pending IS NULL").Error; err != nil {
+		return fmt.Errorf("backfill ticket attachment pending column: %w", err)
+	}
+	return nil
+}
+
+// migrateTicketSoftDeleteColumns is an expand-only migration for existing
+// ticket tables. AddColumn is portable across SQLite, MySQL, and PostgreSQL;
+// no data rewrite or destructive ALTER is required.
+func migrateTicketSoftDeleteColumns() error {
+	if !DB.Migrator().HasTable(&Ticket{}) {
+		return nil
+	}
+	for _, field := range []string{"DeletedAt", "DeletedByUserId"} {
+		if DB.Migrator().HasColumn(&Ticket{}, field) {
+			continue
+		}
+		if err := DB.Migrator().AddColumn(&Ticket{}, field); err != nil {
+			return fmt.Errorf("add ticket soft-delete column %s: %w", field, err)
+		}
+	}
+	return nil
+}
+
+// migrateTicketCreateRequestOwner performs expand/backfill/index replacement
+// without opening a window where legacy retries can create a second ticket.
+func migrateTicketCreateRequestOwner() error {
+	const legacyIndexName = "idx_ticket_create_request_actor_request"
+	if !DB.Migrator().HasTable(&TicketCreateRequest{}) {
+		return nil
+	}
+	if !DB.Migrator().HasColumn(&TicketCreateRequest{}, "owner_user_id") {
+		if err := DB.Migrator().AddColumn(&TicketCreateRequest{}, "OwnerUserId"); err != nil {
+			return fmt.Errorf("add ticket create request owner_user_id: %w", err)
+		}
+	}
+	if err := DB.Exec(`UPDATE ticket_create_requests
+		SET owner_user_id = (SELECT tickets.user_id FROM tickets WHERE tickets.id = ticket_create_requests.ticket_id)
+		WHERE (owner_user_id IS NULL OR owner_user_id = 0) AND ticket_id > 0`).Error; err != nil {
+		return fmt.Errorf("backfill ticket create request owners: %w", err)
+	}
+	var orphanCount int64
+	if err := DB.Table("ticket_create_requests AS r").
+		Where("r.ticket_id <= 0 OR r.owner_user_id IS NULL OR r.owner_user_id = 0 OR NOT EXISTS (SELECT 1 FROM tickets t WHERE t.id = r.ticket_id AND t.user_id = r.owner_user_id)").
+		Count(&orphanCount).Error; err != nil {
+		return fmt.Errorf("validate ticket create request owners: %w", err)
+	}
+	if orphanCount > 0 {
+		return fmt.Errorf("ticket_create_requests contains %d orphaned idempotency rows", orphanCount)
+	}
+	const ownerIndexName = "idx_ticket_create_request_actor_owner_request"
+	if !DB.Migrator().HasIndex(&TicketCreateRequest{}, ownerIndexName) {
+		if err := DB.Migrator().CreateIndex(&TicketCreateRequest{}, ownerIndexName); err != nil {
+			return fmt.Errorf("create ticket owner idempotency index %s: %w", ownerIndexName, err)
+		}
+	}
+	if DB.Migrator().HasIndex(&TicketCreateRequest{}, legacyIndexName) {
+		if err := DB.Migrator().DropIndex(&TicketCreateRequest{}, legacyIndexName); err != nil {
+			return fmt.Errorf("drop legacy ticket idempotency index %s: %w", legacyIndexName, err)
+		}
 	}
 	return nil
 }

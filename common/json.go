@@ -3,11 +3,14 @@ package common
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 
 	kitutil "github.com/QuantumNous/new-api/relaykit/relayconvert/kitutil"
 	"github.com/gin-gonic/gin/binding"
 )
+
+var ErrTrailingJSONData = errors.New("unexpected data after top-level JSON value")
 
 // hostJSONCodec is the single place where the host chooses its JSON engine.
 // Swap the implementation here (for example to sonic.ConfigStd) and every
@@ -47,6 +50,22 @@ func UnmarshalJsonStr(data string, v any) error {
 
 func DecodeJson(reader io.Reader, v any) error {
 	return kitutil.DecodeJson(reader, v)
+}
+
+func DecodeStrictJson(reader io.Reader, v any) error {
+	decoder := json.NewDecoder(reader)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(v); err != nil {
+		return err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return ErrTrailingJSONData
+		}
+		return err
+	}
+	return nil
 }
 
 // DecodeJsonWithValidation decodes JSON and applies Gin's configured binding-tag

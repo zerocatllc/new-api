@@ -1520,6 +1520,30 @@ func GetUsernameById(id int, fromDB bool) (username string, err error) {
 	return username, nil
 }
 
+type UserNameInfo struct {
+	Username    string
+	DisplayName string
+}
+
+func GetUserNamesByIDs(ids []int) (map[int]UserNameInfo, error) {
+	if len(ids) == 0 {
+		return map[int]UserNameInfo{}, nil
+	}
+	var rows []struct {
+		Id          int
+		Username    string
+		DisplayName string
+	}
+	if err := DB.Model(&User{}).Select("id, username, display_name").Where("id IN ?", ids).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	result := make(map[int]UserNameInfo, len(rows))
+	for _, row := range rows {
+		result[row.Id] = UserNameInfo{Username: row.Username, DisplayName: row.DisplayName}
+	}
+	return result, nil
+}
+
 func IsLinuxDOIdAlreadyTaken(linuxDOId string) bool {
 	var user User
 	err := DB.Unscoped().Where("linux_do_id = ?", linuxDOId).First(&user).Error
