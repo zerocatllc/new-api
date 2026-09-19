@@ -163,7 +163,7 @@ function EmptyState({
   description?: string
 }) {
   return (
-    <Empty className='min-h-48 border-0 p-4'>
+    <Empty className='h-full border-0 p-4'>
       <EmptyHeader>
         <EmptyMedia variant='icon'>{icon}</EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
@@ -204,7 +204,7 @@ function NoticeContent({
   }
 
   return (
-    <ScrollArea className='h-[min(52vh,28rem)] pr-3'>
+    <ScrollArea className='h-full pr-3'>
       <RichContent breaks content={notice} />
     </ScrollArea>
   )
@@ -239,7 +239,7 @@ function AnnouncementsContent({
   }
 
   return (
-    <ScrollArea className='h-[min(52vh,28rem)] pr-3'>
+    <ScrollArea className='h-full pr-3'>
       <div className='flex flex-col'>
         {announcements.map((item, idx) => {
           const announcementKey = getAnnouncementRenderKey(item)
@@ -352,17 +352,25 @@ export function NotificationPopover({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value='notice' className='mt-2'>
-            <NoticeContent notice={notice} loading={loading} t={t} />
-          </TabsContent>
+          {/* Fixed-height stage with absolutely stacked panels: during a
+              tab switch Base UI briefly keeps both panels in layout, which
+              used to double the popup's height for a frame and made the
+              positioner's collision handling fling the popup to the
+              viewport top. Stacking removes the panels from the outer
+              height entirely. */}
+          <div className='relative mt-2 h-[min(52vh,28rem)]'>
+            <TabsContent value='notice' className='absolute inset-0'>
+              <NoticeContent notice={notice} loading={loading} t={t} />
+            </TabsContent>
 
-          <TabsContent value='announcements' className='mt-2'>
-            <AnnouncementsContent
-              announcements={announcements}
-              loading={loading}
-              t={t}
-            />
-          </TabsContent>
+            <TabsContent value='announcements' className='absolute inset-0'>
+              <AnnouncementsContent
+                announcements={announcements}
+                loading={loading}
+                t={t}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
 
         <div className='flex justify-end'>

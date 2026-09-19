@@ -39,7 +39,6 @@ For commercial licensing, please contact support@quantumnous.com
 import * as React from 'react'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { stringToColor } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 
 export const dotColorMap = {
@@ -64,6 +63,33 @@ export const dotColorMap = {
   teal: 'bg-chart-2',
   violet: 'bg-chart-4',
   yellow: 'bg-warning',
+} as const
+
+// Soft filled backgrounds for the default `badge` type, mirroring the reference
+// console (and our own `ui/badge` `destructive` variant: `bg-destructive/10 …`).
+// A tinted chip reads as an intentional status tag instead of bare colored text.
+export const bgColorMap = {
+  success: 'bg-success/15 dark:bg-success/20',
+  warning: 'bg-warning/15 dark:bg-warning/20',
+  danger: 'bg-destructive/15 dark:bg-destructive/25',
+  info: 'bg-info/10 dark:bg-info/15',
+  neutral: 'bg-muted',
+  purple: 'bg-chart-4/10 dark:bg-chart-4/20',
+  amber: 'bg-warning/10 dark:bg-warning/15',
+  blue: 'bg-chart-1/10 dark:bg-chart-1/20',
+  cyan: 'bg-chart-2/10 dark:bg-chart-2/20',
+  green: 'bg-success/10 dark:bg-success/15',
+  grey: 'bg-muted',
+  indigo: 'bg-chart-1/10 dark:bg-chart-1/20',
+  'light-blue': 'bg-info/10 dark:bg-info/15',
+  'light-green': 'bg-emerald-500/10 dark:bg-emerald-400/15',
+  lime: 'bg-chart-3/10 dark:bg-chart-3/20',
+  orange: 'bg-warning/10 dark:bg-warning/15',
+  pink: 'bg-chart-5/10 dark:bg-chart-5/20',
+  red: 'bg-destructive/10 dark:bg-destructive/20',
+  teal: 'bg-chart-2/10 dark:bg-chart-2/20',
+  violet: 'bg-chart-4/10 dark:bg-chart-4/20',
+  yellow: 'bg-warning/10 dark:bg-warning/15',
 } as const
 
 export const textColorMap = {
@@ -105,16 +131,22 @@ export const StatusBadgeTypeContext =
   React.createContext<StatusBadgeType>('badge')
 
 const sizeMap = {
-  sm: 'h-5 gap-1 px-1.5 text-sm leading-none',
-  md: 'h-5 gap-1 px-1.5 text-sm leading-none',
-  lg: 'h-6 gap-1.5 px-2 text-sm leading-none',
+  sm: 'h-5 gap-1 px-1.5 text-xs leading-none',
+  md: 'h-6 gap-1.5 px-2 text-sm leading-none',
+  lg: 'h-7 gap-1.5 px-2.5 text-sm leading-none',
 } as const
 
 const textSizeMap = {
-  sm: 'gap-1 text-sm leading-none',
-  md: 'gap-1 text-sm leading-none',
+  sm: 'gap-1 text-xs leading-none',
+  md: 'gap-1.5 text-sm leading-none',
   lg: 'gap-1.5 text-sm leading-none',
 } as const
+
+const semanticDotVariants = new Set<StatusVariant>([
+  'success',
+  'warning',
+  'danger',
+])
 
 export interface StatusBadgeProps extends Omit<
   React.HTMLAttributes<HTMLSpanElement>,
@@ -124,7 +156,7 @@ export interface StatusBadgeProps extends Omit<
   children?: React.ReactNode
   icon?: LucideIcon
   pulse?: boolean
-  /** Kept for compatibility. Badges no longer render leading dots. */
+  /** Semantic status badges show a dot by default. Pass false to hide it. */
   showDot?: boolean
   variant?: StatusVariant | null
   size?: 'sm' | 'md' | 'lg' | null
@@ -142,10 +174,10 @@ export function StatusBadge({
   variant,
   size = 'sm',
   pulse = false,
-  showDot = false,
+  showDot,
   copyable = true,
   copyText,
-  autoColor,
+  autoColor: _autoColor,
   type: typeProp,
   className,
   onClick,
@@ -155,9 +187,9 @@ export function StatusBadge({
   const contextType = React.useContext(StatusBadgeTypeContext)
   const type = typeProp ?? contextType
 
-  const computedVariant: StatusVariant = autoColor
-    ? (stringToColor(autoColor) as StatusVariant)
-    : (variant ?? 'neutral')
+  const computedVariant: StatusVariant = variant ?? 'neutral'
+  const shouldShowDot =
+    showDot ?? (type === 'badge' && semanticDotVariants.has(computedVariant))
 
   const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     if (copyable) {
@@ -184,7 +216,12 @@ export function StatusBadge({
       className={cn(
         'inline-flex w-fit max-w-full min-w-0 shrink items-center font-medium tracking-normal whitespace-nowrap transition-colors',
         isBadge
-          ? cn('rounded-4xl', sizeMap[size ?? 'sm'])
+          ? cn(
+              'rounded-lg',
+              sizeMap[size ?? 'sm'],
+              bgColorMap[computedVariant],
+              semanticDotVariants.has(computedVariant) && 'font-semibold'
+            )
           : cn(
               textSizeMap[size ?? 'sm'],
               type === 'underline' && 'border-b border-current pb-px'
@@ -199,7 +236,7 @@ export function StatusBadge({
       title={title}
       {...props}
     >
-      {showDot && (
+      {shouldShowDot && (
         <span
           className={cn(
             'inline-block size-1.5 shrink-0 rounded-full',

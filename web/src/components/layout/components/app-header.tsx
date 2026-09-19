@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import type { ReactNode } from 'react'
+
 import { ConfigDrawer } from '@/components/config-drawer'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { NotificationPopover } from '@/components/notification-popover'
@@ -67,7 +69,7 @@ type AppHeaderProps = {
   /**
    * Left content, overrides TopNav if provided
    */
-  leftContent?: React.ReactNode
+  leftContent?: ReactNode
   /**
    * Whether to show search box
    * @default true
@@ -76,7 +78,7 @@ type AppHeaderProps = {
   /**
    * Custom right content, overrides default right content if provided
    */
-  rightContent?: React.ReactNode
+  rightContent?: ReactNode
   /**
    * Whether to show notification button
    * @default true
@@ -117,37 +119,48 @@ export function AppHeader({
         <SystemBrand variant='inline' />
         <SystemUpdateAction presentation='version' />
       </div>
+      <div className='bg-border mx-1 hidden h-5 w-px sm:block' />
 
       {leftContent ? (
         <div className='ms-2 flex items-center'>{leftContent}</div>
       ) : null}
 
       {rightContent ?? (
-        <div className='ms-auto flex shrink-0 items-center gap-1 sm:gap-2'>
-          {showTopNav && (
-            <div className='me-1 hidden lg:block'>
-              <TopNav links={links} />
+        <>
+          {showSearch && (
+            <div className='flex flex-1 justify-center px-1 sm:px-2'>
+              <Search compactOnMobile />
             </div>
           )}
-          {showSearch && (
-            <Search className='w-8 flex-none [&>span]:hidden sm:[&>span]:inline' />
-          )}
-          {showNotifications && (
-            <NotificationPopover
-              open={notifications.popoverOpen}
-              onOpenChange={notifications.setPopoverOpen}
-              unreadCount={notifications.unreadCount}
-              activeTab={notifications.activeTab}
-              onTabChange={notifications.setActiveTab}
-              notice={notifications.notice}
-              announcements={notifications.announcements}
-              loading={notifications.loading}
-            />
-          )}
-          <LanguageSwitcher />
-          {showConfigDrawer && <ConfigDrawer />}
-          {showProfileDropdown && <ProfileDropdown />}
-        </div>
+
+          <div className='ms-auto flex items-center gap-1 sm:gap-2'>
+            {showTopNav && (
+              <div className='me-1 hidden lg:block'>
+                <TopNav links={links} />
+              </div>
+            )}
+            {showTopNav && (
+              <div className='bg-border me-1 hidden h-5 w-px lg:block' />
+            )}
+            {showNotifications && (
+              <NotificationPopover
+                open={notifications.popoverOpen}
+                onOpenChange={notifications.setPopoverOpen}
+                unreadCount={notifications.unreadCount}
+                activeTab={notifications.activeTab}
+                onTabChange={notifications.setActiveTab}
+                notice={notifications.notice}
+                announcements={notifications.announcements}
+                loading={notifications.loading}
+              />
+            )}
+            <div className='max-sm:hidden'>
+              <LanguageSwitcher />
+            </div>
+            {showConfigDrawer && <ConfigDrawer />}
+            {showProfileDropdown && <ProfileDropdown />}
+          </div>
+        </>
       )}
     </Header>
   )

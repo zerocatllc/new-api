@@ -16,10 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/lib/utils'
+import { useSystemConfigStore } from '@/stores/system-config-store'
 
 interface LoadingStateProps {
   className?: string
@@ -28,22 +28,47 @@ interface LoadingStateProps {
   inline?: boolean
 }
 
-const sizeMap = {
-  sm: 'size-4',
-  md: 'size-6',
-  lg: 'size-8',
+const wordmarkSizeMap = {
+  sm: 'text-sm',
+  md: 'text-lg',
+  lg: 'text-2xl',
 } as const
+
+/* The loading language has exactly two voices: the pulsing brand wordmark
+ * (splash, route pending, and — via this component — any in-place load) and
+ * content skeletons for data regions whose layout is stable. No rings, no
+ * dots, no bespoke spinners. */
+function BrandWordmark(props: { size: 'sm' | 'md' | 'lg' }) {
+  const systemName = useSystemConfigStore((state) => state.config.systemName)
+  return (
+    <span
+      aria-hidden='true'
+      className={cn(
+        wordmarkSizeMap[props.size],
+        'font-heading text-brand animate-pulse font-extrabold tracking-wide motion-reduce:animate-none'
+      )}
+    >
+      {systemName}
+    </span>
+  )
+}
 
 export function LoadingState(props: LoadingStateProps) {
   const { t } = useTranslation()
-  const iconSize = sizeMap[props.size ?? 'md']
+  const size = props.size ?? 'md'
 
   if (props.inline) {
     return (
-      <span className={cn('inline-flex items-center gap-2', props.className)}>
-        <Loader2 className={cn(iconSize, 'animate-spin')} />
+      <span
+        role='status'
+        aria-label={props.message ?? t('Loading...')}
+        className={cn('inline-flex items-center gap-2', props.className)}
+      >
+        <BrandWordmark size={size} />
         {props.message != null && (
-          <span className='text-muted-foreground text-sm'>{props.message}</span>
+          <span aria-hidden='true' className='text-muted-foreground text-sm'>
+            {props.message}
+          </span>
         )}
       </span>
     )
@@ -51,14 +76,13 @@ export function LoadingState(props: LoadingStateProps) {
 
   return (
     <div
+      role='status'
       className={cn(
         'flex min-h-[200px] flex-col items-center justify-center gap-3',
         props.className
       )}
     >
-      <div className='animate-spin'>
-        <Loader2 className={iconSize} />
-      </div>
+      <BrandWordmark size={size} />
       <p className='text-muted-foreground text-sm'>
         {props.message ?? t('Loading...')}
       </p>

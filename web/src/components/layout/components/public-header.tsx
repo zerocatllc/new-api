@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
@@ -39,6 +39,8 @@ import type { TopNavLink } from '../types'
 import { HeaderLogo } from './header-logo'
 
 const AUTH_PROMPT_SECONDS = 5
+const ANNOUNCEMENT_COLLAPSE_SCROLL_Y = 80
+const ANNOUNCEMENT_EXPAND_SCROLL_Y = 8
 
 type AuthPromptTarget = {
   title: string
@@ -59,7 +61,91 @@ export interface PublicHeaderProps {
   showNavigation?: boolean
   showAuthButtons?: boolean
   showNotifications?: boolean
+  /**
+   * `app` (default) is the product chrome: centered command search, nav links
+   * + currency on the right. `landing` is the marketing header matching
+   * landing-test: left-aligned nav after the logo, no center search, hairline
+   * bottom border, and outline/ink auth pills on the right. Scoped to the home
+   * page so other public pages keep search and currency.
+   */
+  variant?: 'app' | 'landing'
+  /**
+   * Slim marketing strip rendered above the nav row in the landing header
+   * (matches landing-test). Only used when variant is `landing`.
+   */
+  announcement?: { content: string; linkText?: string; linkUrl?: string }
   className?: string
+}
+
+function renderHeaderBrandLogo({
+  loading,
+  customLogo,
+  systemLogo,
+  logoLoaded,
+}: {
+  loading: boolean
+  customLogo?: React.ReactNode
+  systemLogo: string
+  logoLoaded: boolean
+}) {
+  if (loading) {
+    return <Skeleton className='size-full rounded-lg' />
+  }
+  if (customLogo) {
+    return customLogo
+  }
+  return (
+    <HeaderLogo
+      src={systemLogo}
+      loading={loading}
+      logoLoaded={logoLoaded}
+      className='size-full object-contain'
+    />
+  )
+}
+
+function renderHeaderAuthAction({
+  loading,
+  isAuthenticated,
+  isLanding,
+  t,
+}: {
+  loading: boolean
+  isAuthenticated: boolean
+  isLanding: boolean
+  t: (key: string) => string
+}) {
+  if (loading) {
+    return <Skeleton className='h-8 w-20 rounded-lg' />
+  }
+  if (isAuthenticated) {
+    return <ProfileDropdown />
+  }
+  if (isLanding) {
+    // Landing keeps a single auth entry (Sign in) in the header; the
+    // primary "Get Started" call-to-action lives in the Hero so the
+    // two are not duplicated.
+    return (
+      <div className='hidden items-center gap-2 lg:flex'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='h-8 rounded-md'
+          render={<Link to='/sign-in' />}
+        >
+          {t('Sign in')}
+        </Button>
+      </div>
+    )
+  }
+  return (
+    <Link
+      to='/sign-in'
+      className='text-foreground/80 hover:text-foreground hidden px-2 py-1.5 text-[13px] font-medium transition-colors duration-200 lg:inline-block'
+    >
+      {t('Sign in')}
+    </Link>
+  )
 }
 
 export function PublicHeader(props: PublicHeaderProps) {
@@ -72,7 +158,10 @@ export function PublicHeader(props: PublicHeaderProps) {
     homeUrl = '/',
     showAuthButtons = true,
     showNotifications = true,
+    variant = 'app',
+    announcement,
   } = props
+  const isLanding = variant === 'landing'
 
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -90,50 +179,74 @@ export function PublicHeader(props: PublicHeaderProps) {
     logoLoaded,
   } = useSystemConfig()
   const dynamicLinks = useTopNavLinks()
-  const notifications = useNotifications()
   const routerState = useRouterState()
   const pathname = routerState.location.pathname
+  // The hairline frame + marketing strip belong to the home page only; other
+  // landing pages (rankings, pricing, about) get a clean solid header.
+  const isHome = isLanding && pathname === '/'
+  const hasCollapsibleAnnouncement = isHome && Boolean(announcement)
+  const notifications = useNotifications()
+  const headerRef = useRef<HTMLElement>(null)
+  const [headerHeight, setHeaderHeight] = useState(64)
 
   const user = auth.user
   const isAuthenticated = !!user
   const displaySiteName = customSiteName || systemName
+  // Both the app and landing headers use the backend's nav (useTopNavLinks);
+  // the prop navLinks is only a fallback for when the backend returns none.
   const links = dynamicLinks.length > 0 ? dynamicLinks : navLinks
 
-  let logoContent: ReactNode = (
-    <HeaderLogo
-      src={systemLogo}
-      loading={loading}
-      logoLoaded={logoLoaded}
-      className='size-full rounded-lg object-contain'
-    />
-  )
-  if (customLogo) logoContent = customLogo
-  if (loading) logoContent = <Skeleton className='size-full rounded-lg' />
-
-  let authContent = (
-    <Button
-      size='sm'
-      className='h-8 rounded-lg px-3.5 text-xs font-medium'
-      render={<Link to='/sign-in' />}
-    >
-      {t('Sign in')}
-    </Button>
-  )
-  if (isAuthenticated) authContent = <ProfileDropdown />
-  if (loading) authContent = <Skeleton className='h-8 w-20 rounded-lg' />
-
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    onScroll()
+    const onScroll = () => {
+      if (!hasCollapsibleAnnouncement) {
+        setScrolled(window.scrollY > 20)
+        return
+      }
+
+      setScrolled((isCollapsed) => {
+        if (isCollapsed) {
+          return window.scrollY > ANNOUNCEMENT_EXPAND_SCROLL_Y
+        }
+        return window.scrollY > ANNOUNCEMENT_COLLAPSE_SCROLL_Y
+      })
+    }
+
+    setScrolled(
+      window.scrollY >
+        (hasCollapsibleAnnouncement ? ANNOUNCEMENT_COLLAPSE_SCROLL_Y : 20)
+    )
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [hasCollapsibleAnnouncement])
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''
     return () => {
       document.body.style.overflow = ''
     }
+  }, [mobileOpen])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+
+    const header = headerRef.current
+    if (!header) return
+
+    const updateHeaderHeight = () => {
+      setHeaderHeight(header.getBoundingClientRect().height)
+    }
+
+    updateHeaderHeight()
+    const observer = new ResizeObserver(updateHeaderHeight)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [mobileOpen])
+
+  const toggleMobileMenu = useCallback(() => {
+    if (!mobileOpen && headerRef.current) {
+      setHeaderHeight(headerRef.current.getBoundingClientRect().height)
+    }
+    setMobileOpen((isOpen) => !isOpen)
   }, [mobileOpen])
 
   useEffect(() => {
@@ -184,7 +297,7 @@ export function PublicHeader(props: PublicHeaderProps) {
         }
         setAuthPromptSecondsLeft(AUTH_PROMPT_SECONDS)
         setAuthPromptTarget({
-          title: t(link.title),
+          title: link.title,
           href: link.href,
         })
         return
@@ -194,159 +307,236 @@ export function PublicHeader(props: PublicHeaderProps) {
         setMobileOpen(false)
       }
     },
-    [t]
+    []
+  )
+
+  // Desktop nav links — rendered on the right for the app header, or inline
+  // after the logo for the landing header.
+  const navLinksEl = (
+    <div className='hidden items-center gap-0.5 lg:flex'>
+      {links.map((link) => {
+        const isActive = pathname === link.href
+        if (link.external) {
+          return (
+            <a
+              key={link.href}
+              href={link.href}
+              target='_blank'
+              rel='noopener noreferrer'
+              aria-disabled={link.disabled}
+              tabIndex={link.disabled ? -1 : undefined}
+              onClick={(event) => handleNavLinkClick(event, link)}
+              className={cn(
+                'text-muted-foreground hover:text-foreground inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors duration-200',
+                link.disabled && 'pointer-events-none opacity-50'
+              )}
+            >
+              {link.title}
+            </a>
+          )
+        }
+        return (
+          <Link
+            key={link.href}
+            to={link.href}
+            disabled={link.disabled}
+            onClick={(event) => handleNavLinkClick(event, link)}
+            className={cn(
+              'inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors duration-200',
+              isActive
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+              link.disabled && 'pointer-events-none opacity-50'
+            )}
+          >
+            {link.title}
+          </Link>
+        )
+      })}
+    </div>
   )
 
   return (
     <>
-      <header className='pointer-events-none fixed inset-x-0 top-0 z-50'>
-        <div
-          className={cn(
-            'pointer-events-auto mx-auto transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
-            scrolled ? 'max-w-[52rem] px-3 pt-3' : 'max-w-7xl px-4 pt-0 md:px-6'
-          )}
-        >
-          <nav
+      <header
+        ref={headerRef}
+        className={cn(
+          'bg-background/95 z-50 backdrop-blur-md transition-shadow',
+          isLanding
+            ? 'sticky top-0'
+            : 'border-border fixed inset-x-0 top-0 h-16 border-b',
+          // App header gets a subtle shadow on scroll; the landing header relies
+          // on its hairline border-b alone (matching the Kimi reference, which
+          // has no shadow — a shadow reads as a second line under the border).
+          !isLanding && scrolled && 'shadow-sm'
+        )}
+      >
+        {/* Landing header spans the full viewport like the page body (Kimi
+            reference: no width cap); the nav row's own padding provides the
+            gutters. App header stays a plain full-width bar — the wrappers
+            are no-ops. */}
+        <div className={cn(isLanding && 'w-full')}>
+          <div
             className={cn(
-              'flex items-center justify-between gap-2 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
-              scrolled
-                ? 'bg-background/60 ring-border/50 h-12 rounded-2xl pr-1.5 pl-4 shadow-[0_2px_16px_-6px_rgba(0,0,0,0.08),0_0_0_0.5px_rgba(0,0,0,0.02)] ring-[0.5px] backdrop-blur-2xl dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,0.4)]'
-                : 'h-16 px-2'
+              // Solid hairline under the header, mirroring the Kimi reference
+              // (no side rails, no dashed blueprint lines).
+              isLanding && 'border-border border-b'
             )}
           >
-            {/* Logo */}
-            <div className='@container/system-brand flex min-w-0 flex-1 items-center gap-1 lg:min-w-36'>
-              <Link
-                to={homeUrl}
-                className='group flex min-w-0 items-center gap-2.5'
-              >
-                <div className='flex size-7 shrink-0 items-center justify-center transition-all duration-300 group-hover:scale-105'>
-                  {logoContent}
-                </div>
-                <span
-                  className='max-w-48 truncate text-sm font-semibold tracking-tight'
-                  title={displaySiteName}
-                >
-                  {loading ? (
-                    <Skeleton className='h-4 w-16' />
-                  ) : (
-                    displaySiteName
+            <div
+              className={cn(
+                'relative flex h-16 items-center gap-3 sm:gap-4',
+                // Landing fills the framed rail width with the same inset as the
+                // body sections (px-6 md:px-8), so the logo lines up with the page
+                // content edge instead of sitting in a centered max-w-6xl gutter.
+                isLanding
+                  ? 'mx-auto w-full max-w-[1440px] px-6 md:px-8'
+                  : 'px-4'
+              )}
+            >
+              {/* Left: logo + divider */}
+              <div className='@container/system-brand flex items-center gap-2'>
+                <Link
+                  to={homeUrl}
+                  className={cn(
+                    'flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80',
+                    // Landing: no left padding so the logo glyph sits flush at the
+                    // content edge (x≈150), aligning with the footer brand and the
+                    // section content. App header keeps symmetric px-2.
+                    isLanding ? 'pr-2' : 'px-2'
                   )}
-                </span>
-              </Link>
-              <SystemUpdateAction presentation='version' />
-            </div>
-
-            {/* Desktop nav */}
-            <div className='hidden min-w-0 items-center gap-0.5 lg:flex'>
-              {links.map((link) => {
-                const isActive = pathname === link.href
-                if (link.external) {
-                  return (
-                    <a
-                      key={`${link.title}:${link.href}`}
-                      href={link.href}
-                      title={t(link.title)}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      aria-disabled={link.disabled}
-                      tabIndex={link.disabled ? -1 : undefined}
-                      onClick={(event) => handleNavLinkClick(event, link)}
-                      className={cn(
-                        'text-muted-foreground hover:text-foreground min-w-0 truncate rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200',
-                        link.disabled && 'pointer-events-none opacity-50'
-                      )}
-                    >
-                      {t(link.title)}
-                    </a>
-                  )
-                }
-                return (
-                  <Link
-                    key={`${link.title}:${link.href}`}
-                    to={link.href}
-                    title={t(link.title)}
-                    disabled={link.disabled}
-                    onClick={(event) => handleNavLinkClick(event, link)}
+                >
+                  <div className='flex size-8 shrink-0 items-center justify-center'>
+                    {renderHeaderBrandLogo({
+                      loading,
+                      customLogo,
+                      systemLogo,
+                      logoLoaded,
+                    })}
+                  </div>
+                  <span
                     className={cn(
-                      'min-w-0 truncate rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200',
-                      isActive
-                        ? 'text-foreground'
-                        : 'text-muted-foreground hover:text-foreground',
-                      link.disabled && 'pointer-events-none opacity-50'
+                      'tracking-tight',
+                      isLanding
+                        ? 'font-serif text-lg font-medium'
+                        : 'text-sm font-semibold'
                     )}
                   >
-                    {t(link.title)}
-                  </Link>
-                )
-              })}
+                    {loading ? (
+                      <Skeleton className='h-4 w-16' />
+                    ) : (
+                      displaySiteName
+                    )}
+                  </span>
+                </Link>
+                <SystemUpdateAction presentation='version' />
+                {!isLanding && (
+                  <div className='bg-border mr-2 hidden h-4 w-px md:block' />
+                )}
+              </div>
 
-              {(showLanguageSwitcher ||
-                showThemeSwitch ||
-                showNotifications) && (
-                <div className='bg-border/40 mx-2 h-4 w-px' />
-              )}
+              {/* Center: spacer. The command palette is console-only and this
+              header also renders for signed-out visitors, so it must not reach
+              the search context at all. */}
+              <div className='flex-1' />
 
-              {showLanguageSwitcher && <LanguageSwitcher />}
-              {showThemeSwitch && <ThemeSwitch />}
-              {showNotifications && (
-                <NotificationPopover
-                  open={notifications.popoverOpen}
-                  onOpenChange={notifications.setPopoverOpen}
-                  unreadCount={notifications.unreadCount}
-                  activeTab={notifications.activeTab}
-                  onTabChange={notifications.setActiveTab}
-                  notice={notifications.notice}
-                  announcements={notifications.announcements}
-                  loading={notifications.loading}
-                />
-              )}
+              {/* Right: nav links + currency + language + theme + notifications + profile */}
+              <div className='ml-auto flex shrink-0 items-center gap-1'>
+                {/* Both variants keep nav on the right (Kimi order: logo alone
+                on the left, nav + auth clustered right); landing drops currency
+                for a cleaner marketing bar. */}
+                {navLinksEl}
+                {isLanding && (
+                  <div className='bg-border/60 mx-2 hidden h-4 w-px lg:block' />
+                )}
 
-              {showAuthButtons && (
-                <>
-                  <div className='bg-border/40 mx-1 h-4 w-px' />
-                  {authContent}
-                </>
-              )}
+                {!isLanding && (
+                  <div className='bg-border/40 mx-1 hidden h-4 w-px lg:block' />
+                )}
+
+                {showLanguageSwitcher && <LanguageSwitcher />}
+                {showThemeSwitch && <ThemeSwitch />}
+                {showNotifications && (
+                  <NotificationPopover
+                    open={notifications.popoverOpen}
+                    onOpenChange={notifications.setPopoverOpen}
+                    unreadCount={notifications.unreadCount}
+                    activeTab={notifications.activeTab}
+                    onTabChange={notifications.setActiveTab}
+                    notice={notifications.notice}
+                    announcements={notifications.announcements}
+                    loading={notifications.loading}
+                  />
+                )}
+
+                {showAuthButtons &&
+                  renderHeaderAuthAction({
+                    loading,
+                    isAuthenticated,
+                    isLanding,
+                    t,
+                  })}
+
+                {/* Mobile hamburger */}
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='size-9 lg:hidden'
+                  onClick={toggleMobileMenu}
+                  aria-label={t('Toggle navigation menu')}
+                >
+                  <div className='relative size-4'>
+                    <span
+                      className={cn(
+                        'absolute inset-x-0 block h-[1.5px] origin-center rounded-full bg-current transition-all duration-300',
+                        mobileOpen ? 'top-[7px] rotate-45' : 'top-[3px]'
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'absolute inset-x-0 top-[7px] block h-[1.5px] rounded-full bg-current transition-all duration-300',
+                        mobileOpen ? 'scale-x-0 opacity-0' : 'opacity-100'
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'absolute inset-x-0 block h-[1.5px] origin-center rounded-full bg-current transition-all duration-300',
+                        mobileOpen ? 'top-[7px] -rotate-45' : 'top-[11px]'
+                      )}
+                    />
+                  </div>
+                </Button>
+              </div>
             </div>
-
-            {/* Mobile: compact actions + hamburger */}
-            <div className='flex shrink-0 items-center gap-2 lg:hidden'>
-              {showThemeSwitch && <ThemeSwitch />}
-              {showAuthButtons && !loading && isAuthenticated && (
-                <ProfileDropdown />
-              )}
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                className='size-9'
-                onClick={() => setMobileOpen((v) => !v)}
-                aria-label={t('Toggle navigation menu')}
+            {/* Landing: slim marketing strip BELOW the nav row (Kimi order:
+                header first, announcement second). Collapses away on scroll so
+                only the nav row stays stuck. */}
+            {isHome && announcement && (
+              <div
+                className={cn(
+                  'overflow-hidden transition-all duration-300 ease-out',
+                  scrolled ? 'max-h-0 opacity-0' : 'max-h-16 opacity-100'
+                )}
               >
-                <div className='relative size-4'>
-                  <span
-                    className={cn(
-                      'absolute inset-x-0 block h-[1.5px] origin-center rounded-full bg-current transition-all duration-300',
-                      mobileOpen ? 'top-[7px] rotate-45' : 'top-[3px]'
+                <div className='border-border text-muted-foreground border-t px-4 py-2.5 text-center text-sm'>
+                  <div className='mx-auto flex max-w-6xl items-center justify-center gap-2'>
+                    <span className='leading-relaxed'>
+                      {announcement.content}
+                    </span>
+                    {announcement.linkUrl && (
+                      <a
+                        href={announcement.linkUrl}
+                        className='font-medium text-[var(--brand)] underline-offset-2 hover:underline'
+                      >
+                        {announcement.linkText || announcement.linkUrl}
+                      </a>
                     )}
-                  />
-                  <span
-                    className={cn(
-                      'absolute inset-x-0 top-[7px] block h-[1.5px] rounded-full bg-current transition-all duration-300',
-                      mobileOpen ? 'scale-x-0 opacity-0' : 'opacity-100'
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      'absolute inset-x-0 block h-[1.5px] origin-center rounded-full bg-current transition-all duration-300',
-                      mobileOpen ? 'top-[7px] -rotate-45' : 'top-[11px]'
-                    )}
-                  />
+                  </div>
                 </div>
-              </Button>
-            </div>
-          </nav>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -359,7 +549,10 @@ export function PublicHeader(props: PublicHeaderProps) {
             : 'pointer-events-none opacity-0'
         )}
       >
-        <div className='flex h-full flex-col justify-between px-8 pt-20 pb-10'>
+        <div
+          className='flex h-full flex-col justify-between px-8 pb-10'
+          style={{ paddingTop: isLanding ? headerHeight : '5rem' }}
+        >
           <nav className='flex flex-col gap-1'>
             {links.map((link, i) => {
               const isActive = pathname === link.href
@@ -377,7 +570,7 @@ export function PublicHeader(props: PublicHeaderProps) {
               if (link.external) {
                 return (
                   <a
-                    key={`${link.title}:${link.href}`}
+                    key={link.href}
                     href={link.href}
                     target='_blank'
                     rel='noopener noreferrer'
@@ -387,20 +580,20 @@ export function PublicHeader(props: PublicHeaderProps) {
                     className={linkClassName}
                     style={transitionStyle}
                   >
-                    {t(link.title)}
+                    {link.title}
                   </a>
                 )
               }
               return (
                 <Link
-                  key={`${link.title}:${link.href}`}
+                  key={link.href}
                   to={link.href}
                   disabled={link.disabled}
                   onClick={(event) => handleNavLinkClick(event, link, true)}
                   className={linkClassName}
                   style={transitionStyle}
                 >
-                  {t(link.title)}
+                  {link.title}
                 </Link>
               )
             })}

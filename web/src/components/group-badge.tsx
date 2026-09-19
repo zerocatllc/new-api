@@ -94,7 +94,6 @@ export function GroupBadge(props: GroupBadgeProps) {
   const groupName = group?.trim()
   const isAutoGroup = groupName === 'auto'
   const isEmptyGroup = !groupName
-  const isSpecialGroup = isAutoGroup || isEmptyGroup
   const label = getGroupLabel({
     labelOverride,
     groupName,
@@ -108,10 +107,13 @@ export function GroupBadge(props: GroupBadgeProps) {
       {...badgeProps}
       copyable={copyable}
       label={label}
-      showDot={showDot ?? (isSpecialGroup ? false : undefined)}
-      variant={isSpecialGroup ? 'neutral' : undefined}
-      autoColor={isSpecialGroup ? undefined : groupName}
-      className={cn('min-w-0 shrink overflow-hidden', className)}
+      showDot={showDot ?? false}
+      variant='neutral'
+      className={cn(
+        'border-border bg-muted/70 text-muted-foreground rounded-md border text-xs dark:bg-muted/50',
+        'min-w-0 shrink overflow-hidden',
+        className
+      )}
     />
   )
 

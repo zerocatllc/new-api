@@ -17,12 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useNavigate } from '@tanstack/react-router'
-import { User, Wallet, LogOut, Settings, ShieldCheck } from 'lucide-react'
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SignOutDialog } from '@/components/sign-out-dialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -31,93 +28,91 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { SelfUserAvatar } from '@/components/user-avatar'
 import useDialogState from '@/hooks/use-dialog'
 import { useIsSidebarModuleVisible } from '@/hooks/use-sidebar-config'
 import { useUserDisplay } from '@/hooks/use-user-display'
-import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
+import { formatQuota } from '@/lib/format'
 import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
-
-const avatarFallbackClassName = 'font-semibold text-white'
 
 export function ProfileDropdown() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [open, setOpen] = useDialogState()
   const user = useAuthStore((state) => state.auth.user)
-  const { displayName, roleLabel } = useUserDisplay(user)
+  const { displayName } = useUserDisplay(user)
   const isSuperAdmin = user?.role === ROLE.SUPER_ADMIN
   const isWalletVisible = useIsSidebarModuleVisible('/wallet')
   const isSecurityVisible = useIsSidebarModuleVisible('/security')
   const avatarName = user?.username || displayName
-  const avatarFallback = getUserAvatarFallback(avatarName)
-  const avatarFallbackStyle = useMemo(
-    () => getUserAvatarStyle(avatarName),
-    [avatarName]
-  )
 
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger
-          render={<Button variant='ghost' className='relative size-6 p-0' />}
+          render={
+            <Button
+              variant='ghost'
+              className='relative size-8 overflow-hidden rounded-full p-0'
+            />
+          }
         >
-          <Avatar className='size-6'>
-            <AvatarFallback
-              className={`${avatarFallbackClassName} text-[11px]`}
-              style={avatarFallbackStyle}
-            >
-              {avatarFallback}
-            </AvatarFallback>
-          </Avatar>
+          <SelfUserAvatar name={avatarName} className='size-8' />
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' sideOffset={8} className='w-56'>
-          <div className='flex items-center gap-2 px-1.5 py-1.5'>
-            <Avatar className='size-8'>
-              <AvatarFallback
-                className={`${avatarFallbackClassName} text-xs`}
-                style={avatarFallbackStyle}
-              >
-                {avatarFallback}
-              </AvatarFallback>
-            </Avatar>
+          <div className='flex items-center gap-2 px-2 py-1.5'>
+            <SelfUserAvatar name={avatarName} className='size-9' />
             <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
-              <p className='text-foreground truncate text-sm font-medium'>
+              <p className='text-foreground truncate text-sm font-semibold'>
                 {displayName}
               </p>
-              <div className='flex items-center gap-1.5'>
-                <span className='text-muted-foreground text-xs'>
-                  {roleLabel}
-                </span>
-                {user?.group && (
-                  <>
-                    <span className='text-muted-foreground text-xs'>·</span>
-                    <span className='text-muted-foreground truncate text-xs'>
-                      {String(user.group)}
-                    </span>
-                  </>
-                )}
-              </div>
+              {user?.username && (
+                <p className='text-muted-foreground truncate text-xs'>
+                  @{user.username}
+                </p>
+              )}
+              {user?.email && (
+                <p className='text-muted-foreground truncate text-xs'>
+                  {user.email}
+                </p>
+              )}
             </div>
           </div>
 
           <DropdownMenuSeparator />
 
+          <div className='space-y-1.5 px-2 py-1.5'>
+            <div className='flex items-center justify-between text-xs'>
+              <span className='text-muted-foreground'>{t('Balance')}</span>
+              <span className='text-brand font-medium tabular-nums'>
+                {formatQuota(user?.quota ?? 0)}
+              </span>
+            </div>
+            {user?.group && (
+              <div className='flex items-center justify-between text-xs'>
+                <span className='text-muted-foreground'>{t('Group')}</span>
+                <span className='max-w-[60%] truncate font-medium'>
+                  {String(user.group)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <DropdownMenuSeparator />
+
           <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
-            <User className='size-4' />
             {t('Profile')}
           </DropdownMenuItem>
 
           {isSecurityVisible && (
             <DropdownMenuItem onClick={() => navigate({ to: '/security' })}>
-              <ShieldCheck className='size-4' />
               {t('Security & Access')}
             </DropdownMenuItem>
           )}
 
           {isWalletVisible && (
             <DropdownMenuItem onClick={() => navigate({ to: '/wallet' })}>
-              <Wallet className='size-4' />
               {t('Wallet')}
             </DropdownMenuItem>
           )}
@@ -131,7 +126,6 @@ export function ProfileDropdown() {
                 })
               }
             >
-              <Settings className='size-4' />
               {t('System Settings')}
             </DropdownMenuItem>
           )}
@@ -139,7 +133,6 @@ export function ProfileDropdown() {
           <DropdownMenuSeparator />
 
           <DropdownMenuItem variant='destructive' onClick={() => setOpen(true)}>
-            <LogOut className='size-4' />
             {t('Sign out')}
           </DropdownMenuItem>
         </DropdownMenuContent>

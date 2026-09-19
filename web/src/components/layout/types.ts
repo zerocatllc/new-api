@@ -16,8 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type LinkProps } from '@tanstack/react-router'
-import { type TFunction } from 'i18next'
+import type { LinkProps } from '@tanstack/react-router'
+import type { TFunction } from 'i18next'
 
 /**
  * Base navigation item type
@@ -71,10 +71,24 @@ export type NavItem = NavCollapsible | NavLink | NavChatPresets
 /**
  * Navigation group type - a group of navigation items in sidebar
  */
+/** Which top-level sidebar panel a nav group belongs to. */
+export type SidebarPanel = 'user' | 'admin'
+
 export type NavGroup = {
   id?: string
   title: string
   items: NavItem[]
+  /**
+   * Panel this group belongs to. Groups are shown only when their panel is the
+   * active one (see `useSidebarPanel`). Defaults to `'user'` when omitted.
+   */
+  panel?: SidebarPanel
+  /**
+   * Start collapsed on first render (until the user toggles it or it contains
+   * the active route). Used for the long surfaced settings groups; the few
+   * top-level structural groups stay expanded.
+   */
+  defaultCollapsed?: boolean
 }
 
 /**

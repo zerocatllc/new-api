@@ -43,7 +43,8 @@ type SidebarViewHeaderProps = {
  */
 export function SidebarViewHeader(props: SidebarViewHeaderProps) {
   const { t } = useTranslation()
-  const { isMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, setOpenMobile } = useSidebar()
+  const compact = state === 'collapsed' && !isMobile
 
   return (
     <SidebarHeader className='border-sidebar-border border-b px-2 py-2'>
@@ -51,6 +52,7 @@ export function SidebarViewHeader(props: SidebarViewHeaderProps) {
         <SidebarMenuItem>
           <SidebarMenuButton
             tooltip={t(props.view.parent.label)}
+            aria-label={t(props.view.parent.label)}
             className={cn(
               'text-muted-foreground hover:text-foreground',
               'gap-1.5 font-medium'
@@ -64,7 +66,9 @@ export function SidebarViewHeader(props: SidebarViewHeaderProps) {
             }
           >
             <ChevronLeft className='size-4 shrink-0' />
-            <span className='truncate'>{t(props.view.parent.label)}</span>
+            {!compact && (
+              <span className='truncate'>{t(props.view.parent.label)}</span>
+            )}
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

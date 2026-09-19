@@ -24,16 +24,27 @@ export type DataTableColumnClassName = (
   kind: 'header' | 'cell'
 ) => string | undefined
 
+export type DataTableColumnStyle = (
+  columnId: string,
+  kind: 'header' | 'cell'
+) => React.CSSProperties | undefined
+
 export type DataTablePinnedColumn = {
   columnId: string
   side: 'left' | 'right'
   className?: string
   headerClassName?: string
   cellClassName?: string
+  // Cumulative px distance from the pinned edge: the summed width of the sibling
+  // pinned columns sitting between this one and the edge. Lets several columns
+  // pinned to the same side stack instead of all collapsing to right/left 0 and
+  // overlapping. Populated from column sizes when pinning is derived from meta.
+  offset?: number
 }
 
 export type DataTableRenderRowHelpers = {
   getCellClassName: (columnId: string, className?: string) => string | undefined
+  getCellStyle: (columnId: string) => React.CSSProperties | undefined
 }
 
 export type DataTableViewProps<TData> = {

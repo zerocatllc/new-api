@@ -280,6 +280,18 @@ export type DataTablePageProps<TData> = {
   defaultViewMode?: DataTableViewMode
 
   /**
+   * Optional mobile-only view mode override. Useful when a wide table should
+   * always fall back to cards on narrow screens while desktop keeps the user's
+   * selected view.
+   */
+  mobileViewMode?: DataTableViewMode
+
+  /**
+   * Hide the table/card switcher on mobile when `mobileViewMode` is fixed.
+   */
+  hideViewModeToggleOnMobile?: boolean
+
+  /**
    * Custom card renderer for card view. When omitted, cards are generated
    * generically from the column definitions (driven by column meta).
    */
@@ -332,11 +344,18 @@ export function DataTablePage<TData>(props: DataTablePageProps<TData>) {
   const cardViewActive = !!props.enableCardView
 
   const viewToggle = cardViewActive ? (
-    <DataTableViewModeToggle value={viewMode} onChange={setViewMode} />
+    <div className={cn(props.hideViewModeToggleOnMobile && 'max-sm:hidden')}>
+      <DataTableViewModeToggle value={viewMode} onChange={setViewMode} />
+    </div>
   ) : undefined
 
   const toolbarNode = renderToolbar(props, viewToggle)
-  const mobileNode = renderMobile(props, showMobile, cardViewActive, viewMode)
+  const mobileNode = renderMobile(
+    props,
+    showMobile,
+    cardViewActive,
+    props.mobileViewMode ?? viewMode
+  )
   const desktopNode = renderDesktop(props, showMobile, cardViewActive, viewMode)
   const paginationNode = renderPagination(props)
 
@@ -351,8 +370,15 @@ export function DataTablePage<TData>(props: DataTablePageProps<TData>) {
         )}
       >
         {toolbarNode}
-        {mobileNode}
-        {desktopNode}
+        <div
+          className={cn(
+            'bg-card overflow-hidden rounded-xl border',
+            props.fixedHeight !== false && 'flex min-h-0 flex-1 flex-col'
+          )}
+        >
+          {mobileNode}
+          {desktopNode}
+        </div>
         {props.afterTable}
       </div>
 

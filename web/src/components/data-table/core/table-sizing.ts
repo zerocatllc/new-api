@@ -19,18 +19,16 @@ For commercial licensing, please contact support@quantumnous.com
 import type { Table as TanstackTable } from '@tanstack/react-table'
 import type * as React from 'react'
 
-import { isContentSizedColumn } from './content-sized-columns'
-
 export function getTableSizeStyle<TData>(
-  table: TanstackTable<TData>
+  _table: TanstackTable<TData>
 ): React.CSSProperties {
-  const width = table
-    .getVisibleLeafColumns()
-    .filter((column) => !isContentSizedColumn(column.id))
-    .reduce((total, column) => total + column.getSize(), 0)
-
+  /* No hard pixel floor: summing the visible columns' preferred sizes used
+   * to force ~140px of horizontal scroll at 1280px viewports. With
+   * `tableLayout: auto` the configured column sizes still act as
+   * preferences, but the table may compress (cells truncate) to fit the
+   * container instead of overflowing it. */
   return {
-    minWidth: `max(100%, ${width}px)`,
+    minWidth: '100%',
     tableLayout: 'auto',
     width: '100%',
   }

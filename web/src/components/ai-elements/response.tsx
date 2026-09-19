@@ -69,10 +69,18 @@ export const Response = memo((props: ResponseProps) => {
       return []
     }
 
-    return parseMarkdownToStructure(content, markdown, {
-      final: isFinal,
-      validateLink: markdown.options.validateLink,
-    })
+    try {
+      return parseMarkdownToStructure(content, markdown, {
+        final: isFinal,
+        validateLink: markdown.options.validateLink,
+      })
+    } catch (error) {
+      console.error(
+        'Markdown parsing failed, falling back to plain text',
+        error
+      )
+      return []
+    }
   }, [content, isFinal, markdown, shouldParseMarkdown])
   const parsedContent = useMemo(() => parseResponseContent(nodes), [nodes])
 

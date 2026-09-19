@@ -16,7 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type Table } from '@tanstack/react-table'
+import type { Table } from '@tanstack/react-table'
+import { SlidersHorizontal } from 'lucide-react'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -32,10 +33,12 @@ import {
 
 type DataTableViewOptionsProps<TData> = {
   table: Table<TData>
+  showIcon?: boolean
 }
 
 export function DataTableViewOptions<TData>({
   table,
+  showIcon = false,
 }: DataTableViewOptionsProps<TData>) {
   const { t } = useTranslation()
 
@@ -56,11 +59,14 @@ export function DataTableViewOptions<TData>({
         render={
           <Button
             variant='outline'
-            className='shrink-0'
+            className={showIcon ? 'shrink-0 gap-2 rounded-xl' : 'shrink-0'}
             aria-label={t('View')}
           />
         }
       >
+        {showIcon && (
+          <SlidersHorizontal className='size-4' aria-hidden='true' />
+        )}
         {t('View')}
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-[150px]'>

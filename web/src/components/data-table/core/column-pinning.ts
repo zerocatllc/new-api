@@ -16,9 +16,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import type * as React from 'react'
+
 import { cn } from '@/lib/utils'
 
-import type { DataTableColumnClassName, DataTablePinnedColumn } from './types'
+import type {
+  DataTableColumnClassName,
+  DataTableColumnStyle,
+  DataTablePinnedColumn,
+} from './types'
 
 export function getResolvedColumnClassName(
   getColumnClassName?: DataTableColumnClassName,
@@ -46,6 +52,23 @@ export function getResolvedColumnClassNameFromMap(
   }
 }
 
+export function getResolvedColumnStyleFromMap(
+  pinnedColumnById?: Map<string, DataTablePinnedColumn>
+): DataTableColumnStyle {
+  return (columnId) => {
+    const pinnedColumn = pinnedColumnById?.get(columnId)
+    if (!pinnedColumn || pinnedColumn.offset == null) {
+      return undefined
+    }
+
+    const offset: React.CSSProperties =
+      pinnedColumn.side === 'left'
+        ? { left: pinnedColumn.offset }
+        : { right: pinnedColumn.offset }
+    return offset
+  }
+}
+
 export function getPinnedColumnMap(pinnedColumns?: DataTablePinnedColumn[]) {
   if (!pinnedColumns?.length) {
     return undefined
@@ -68,8 +91,8 @@ function getPinnedColumnClassName(
     pinnedColumn.side === 'left' ? 'left-0' : 'right-0',
     edgeClassName,
     kind === 'header'
-      ? '[background-color:var(--table-header-bg,var(--table-header))] group-hover:[background-color:var(--table-header-hover)] z-30'
-      : 'bg-background z-10 group-hover:[background-color:color-mix(in_oklch,var(--muted)_50%,var(--background))] group-data-[state=selected]:bg-muted',
+      ? '[background-color:var(--table-header-bg,var(--table-header))] group-hover:[background-color:color-mix(in_oklab,var(--muted)_50%,var(--table-header))] z-30'
+      : '[background-color:var(--table-row)] z-10 group-hover:[background-color:color-mix(in_oklab,var(--muted)_50%,var(--table-row))] group-data-[state=selected]:bg-muted',
     pinnedColumn.className,
     kind === 'header'
       ? pinnedColumn.headerClassName

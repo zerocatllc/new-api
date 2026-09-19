@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils'
 
 import { DataTableColumnHeader } from './column-header'
 import { isContentSizedColumn } from './content-sized-columns'
-import type { DataTableColumnClassName } from './types'
+import type { DataTableColumnClassName, DataTableColumnStyle } from './types'
 
 type DataTableHeaderProps<TData> = {
   table: TanstackTable<TData>
@@ -37,6 +37,7 @@ type DataTableHeaderProps<TData> = {
   className?: string
   rowClassName?: string
   getColumnClassName?: DataTableColumnClassName
+  getColumnStyle?: DataTableColumnStyle
 }
 
 export function DataTableHeader<TData>({
@@ -45,6 +46,7 @@ export function DataTableHeader<TData>({
   className,
   rowClassName,
   getColumnClassName,
+  getColumnStyle,
 }: DataTableHeaderProps<TData>) {
   const { t } = useTranslation()
 
@@ -61,7 +63,10 @@ export function DataTableHeader<TData>({
                 'relative',
                 getColumnClassName?.(header.column.id, 'header')
               )}
-              style={getHeaderSizeStyle(header, applyHeaderSize)}
+              style={{
+                ...getHeaderSizeStyle(header, applyHeaderSize),
+                ...getColumnStyle?.(header.column.id, 'header'),
+              }}
             >
               {renderHeaderContent(header)}
               {shouldRenderColumnResizer(table, header) && (

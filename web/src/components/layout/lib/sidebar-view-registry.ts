@@ -16,9 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type TFunction } from 'i18next'
+import type { TFunction } from 'i18next'
 
-import { SYSTEM_SETTINGS_VIEW } from '../config/system-settings.config'
 import type { NavGroup, SidebarView } from '../types'
 
 /**
@@ -29,8 +28,13 @@ import type { NavGroup, SidebarView } from '../types'
  * "drill-in" pattern). Add new entries here to register a new view.
  *
  * Match priority is array order; the first matching `pathPattern` wins.
+ *
+ * System Settings sections are surfaced directly in the admin panel root nav
+ * (see `use-sidebar-data`), so no nested
+ * view should replace the sidebar there. Kept as an extension point for future
+ * drill-in workspaces.
  */
-const SIDEBAR_VIEWS: readonly SidebarView[] = [SYSTEM_SETTINGS_VIEW]
+const SIDEBAR_VIEWS: readonly SidebarView[] = []
 
 /**
  * Resolve the active nested view for the given path.

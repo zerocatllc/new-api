@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 import {
   getPinnedColumnMap,
   getResolvedColumnClassNameFromMap,
+  getResolvedColumnStyleFromMap,
 } from './column-pinning'
 import { DataTableColgroup } from './data-table-colgroup'
 import { DataTableHeader } from './data-table-header'
@@ -34,6 +35,7 @@ import { getTableSizeStyle } from './table-sizing'
 import { TableSkeleton } from './table-skeleton'
 import type {
   DataTableColumnClassName,
+  DataTableColumnStyle,
   DataTablePinnedColumn,
   DataTableViewProps,
 } from './types'
@@ -53,7 +55,7 @@ export function DataTableView<TData>(props: DataTableViewProps<TData>) {
     () => props.table.getVisibleLeafColumns().length,
     [props.table]
   )
-  const columnClassName = useResolvedColumnClassName(
+  const { getColumnClassName, getColumnStyle } = useResolvedColumnRendering(
     props.table,
     props.getColumnClassName,
     props.pinnedColumns
@@ -61,10 +63,7 @@ export function DataTableView<TData>(props: DataTableViewProps<TData>) {
 
   return (
     <div
-      className={cn(
-        'overflow-hidden rounded-lg border',
-        props.containerClassName
-      )}
+      className={cn('overflow-hidden', props.containerClassName)}
       {...props.containerProps}
     >
       {props.splitHeader ? (
@@ -72,14 +71,16 @@ export function DataTableView<TData>(props: DataTableViewProps<TData>) {
           props={props}
           rows={rows}
           colSpan={colSpan}
-          getColumnClassName={columnClassName}
+          getColumnClassName={getColumnClassName}
+          getColumnStyle={getColumnStyle}
         />
       ) : (
         <UnifiedTableView
           props={props}
           rows={rows}
           colSpan={colSpan}
-          getColumnClassName={columnClassName}
+          getColumnClassName={getColumnClassName}
+          getColumnStyle={getColumnStyle}
         />
       )}
     </div>
@@ -91,11 +92,13 @@ function UnifiedTableView<TData>({
   rows,
   colSpan,
   getColumnClassName,
+  getColumnStyle,
 }: {
   props: DataTableViewProps<TData>
   rows: Row<TData>[]
   colSpan: number
   getColumnClassName: DataTableColumnClassName
+  getColumnStyle: DataTableColumnStyle
 }) {
   const tableSizing = getTableSizing(props)
 
@@ -109,8 +112,15 @@ function UnifiedTableView<TData>({
           className={props.tableHeaderClassName}
           rowClassName={props.tableHeaderRowClassName}
           getColumnClassName={getColumnClassName}
+          getColumnStyle={getColumnStyle}
         />
-        {renderTableBody(props, rows, colSpan, getColumnClassName)}
+        {renderTableBody(
+          props,
+          rows,
+          colSpan,
+          getColumnClassName,
+          getColumnStyle
+        )}
       </Table>
     </div>
   )
@@ -121,11 +131,13 @@ function SplitHeaderTableView<TData>({
   rows,
   colSpan,
   getColumnClassName,
+  getColumnStyle,
 }: {
   props: DataTableViewProps<TData>
   rows: Row<TData>[]
   colSpan: number
   getColumnClassName: DataTableColumnClassName
+  getColumnStyle: DataTableColumnStyle
 }) {
   const tableSizing = getTableSizing(props)
 
@@ -145,9 +157,12 @@ function SplitHeaderTableView<TData>({
           props.bodyContainerClassName
         )}
       >
-        <Table
-          withContainer={false}
-          className={props.tableClassName}
+        <table
+          data-slot='table'
+          className={cn(
+            'w-full caption-bottom text-sm tabular-nums [&_td]:text-sm [&_th]:text-sm',
+            props.tableClassName
+          )}
           style={tableSizing.style}
         >
           {tableSizing.colgroup}
@@ -157,15 +172,22 @@ function SplitHeaderTableView<TData>({
             className={cn('sticky top-0 z-10', props.tableHeaderClassName)}
             rowClassName={props.tableHeaderRowClassName}
             getColumnClassName={getColumnClassName}
+            getColumnStyle={getColumnStyle}
           />
-          {renderTableBody(props, rows, colSpan, getColumnClassName)}
-        </Table>
+          {renderTableBody(
+            props,
+            rows,
+            colSpan,
+            getColumnClassName,
+            getColumnStyle
+          )}
+        </table>
       </div>
     </div>
   )
 }
 
-function useResolvedColumnClassName<TData>(
+function useResolvedColumnRendering<TData>(
   table: TanstackTable<TData>,
   getColumnClassName?: DataTableColumnClassName,
   pinnedColumns?: DataTablePinnedColumn[]
@@ -181,23 +203,45 @@ function useResolvedColumnClassName<TData>(
   )
 
   return React.useMemo(
-    () =>
-      getResolvedColumnClassNameFromMap(getColumnClassName, pinnedColumnById),
+    () => ({
+      getColumnClassName: getResolvedColumnClassNameFromMap(
+        getColumnClassName,
+        pinnedColumnById
+      ),
+      getColumnStyle: getResolvedColumnStyleFromMap(pinnedColumnById),
+    }),
     [getColumnClassName, pinnedColumnById]
   )
 }
 
+// Derive pinned columns from per-column `meta.pinned` and assign each one a
+// cumulative offset (summed width of the sibling pinned columns nearer the
+// edge) so columns pinned to the same side stack rather than collapse onto the
+// same edge and overlap. In the overflow case — the only one where sticky
+// activates — every column renders at exactly its `size` px (see table-sizing),
+// so summing `getSize()` yields the correct offset.
 function getMetaPinnedColumns<TData>(
   table: TanstackTable<TData>
 ): DataTablePinnedColumn[] {
-  return table.getAllColumns().flatMap((column) => {
-    const side = column.columnDef.meta?.pinned
-    if (!side) {
-      return []
-    }
+  const leafColumns = table.getVisibleLeafColumns()
+  const pinned: DataTablePinnedColumn[] = []
 
-    return [{ columnId: column.id, side }]
-  })
+  let rightOffset = 0
+  for (let i = leafColumns.length - 1; i >= 0; i--) {
+    const column = leafColumns[i]
+    if (column.columnDef.meta?.pinned !== 'right') continue
+    pinned.push({ columnId: column.id, side: 'right', offset: rightOffset })
+    rightOffset += column.getSize()
+  }
+
+  let leftOffset = 0
+  for (const column of leafColumns) {
+    if (column.columnDef.meta?.pinned !== 'left') continue
+    pinned.push({ columnId: column.id, side: 'left', offset: leftOffset })
+    leftOffset += column.getSize()
+  }
+
+  return pinned
 }
 
 function mergePinnedColumns(
@@ -246,11 +290,18 @@ function renderTableBody<TData>(
   props: DataTableViewProps<TData>,
   rows: Row<TData>[],
   colSpan: number,
-  getColumnClassName: DataTableColumnClassName
+  getColumnClassName: DataTableColumnClassName,
+  getColumnStyle: DataTableColumnStyle
 ) {
   return (
     <TableBody className={props.tableBodyClassName}>
-      {renderTableBodyContent(props, rows, colSpan, getColumnClassName)}
+      {renderTableBodyContent(
+        props,
+        rows,
+        colSpan,
+        getColumnClassName,
+        getColumnStyle
+      )}
     </TableBody>
   )
 }
@@ -259,7 +310,8 @@ function renderTableBodyContent<TData>(
   props: DataTableViewProps<TData>,
   rows: Row<TData>[],
   colSpan: number,
-  getColumnClassName: DataTableColumnClassName
+  getColumnClassName: DataTableColumnClassName,
+  getColumnStyle: DataTableColumnStyle
 ) {
   if (props.isLoading) {
     return (
@@ -280,8 +332,9 @@ function renderTableBodyContent<TData>(
       ? props.renderRow(row, {
           getCellClassName: (columnId, className) =>
             cn(getColumnClassName(columnId, 'cell'), className),
+          getCellStyle: (columnId) => getColumnStyle(columnId, 'cell'),
         })
-      : renderDefaultRow(props, row, getColumnClassName)
+      : renderDefaultRow(props, row, getColumnClassName, getColumnStyle)
   )
 }
 
@@ -314,7 +367,8 @@ function renderEmptyState<TData>(
 function renderDefaultRow<TData>(
   props: DataTableViewProps<TData>,
   row: Row<TData>,
-  getColumnClassName: DataTableColumnClassName
+  getColumnClassName: DataTableColumnClassName,
+  getColumnStyle: DataTableColumnStyle
 ) {
   return (
     <DataTableRow
@@ -322,6 +376,7 @@ function renderDefaultRow<TData>(
       row={row}
       className={cn(props.tableBodyRowClassName, props.getRowClassName?.(row))}
       getColumnClassName={getColumnClassName}
+      getColumnStyle={getColumnStyle}
       cellRenderColumns={props.table.options.columns}
     />
   )

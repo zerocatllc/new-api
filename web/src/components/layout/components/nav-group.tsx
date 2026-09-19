@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link, useLocation } from '@tanstack/react-router'
 import { ChevronRight } from 'lucide-react'
-import { type ReactNode, useState, useEffect } from 'react'
+import { type ReactNode, useState, useEffect, useMemo } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -56,57 +56,146 @@ import type {
 } from '../types'
 import { ChatPresetsItem } from './chat-presets-item'
 
+const GROUP_OPEN_PREFIX = 'zerocat:navgroup:'
+
+function readGroupOpen(key: string, defaultOpen: boolean): boolean {
+  if (typeof window === 'undefined') return defaultOpen
+  const stored = window.localStorage.getItem(`${GROUP_OPEN_PREFIX}${key}`)
+  return stored === null ? defaultOpen : stored === 'open'
+}
+
+function writeGroupOpen(key: string, open: boolean): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(
+    `${GROUP_OPEN_PREFIX}${key}`,
+    open ? 'open' : 'closed'
+  )
+}
+
+/** Does any item (or sub-item) in the group match the active route? */
+function groupHasActive(items: NavGroupProps['items'], href: string): boolean {
+  return items.some((item) => {
+    if (item.type === 'chat-presets') return false
+    if (item.items) {
+      return item.items.some((sub) => checkIsActive(href, sub))
+    }
+    return checkIsActive(href, item as NavLink)
+  })
+}
+
 /**
  * Sidebar navigation group component
- * Renders a group of navigation items, supporting regular links and collapsible submenus
+ * Renders a group of navigation items, supporting regular links and collapsible
+ * submenus. The group header itself is collapsible (matching the reference
+ * console): click to expand/collapse; the group containing the active route is
+ * always shown, and manual toggles persist per group in localStorage.
  */
-export function NavGroup({ title, items }: NavGroupProps) {
+export function NavGroup({
+  title,
+  items,
+  id,
+  defaultCollapsed,
+}: NavGroupProps) {
   const { state, isMobile } = useSidebar()
   const href = useLocation({ select: (location) => location.href })
 
-  return (
-    <SidebarGroup className='px-2 py-1'>
-      <SidebarGroupLabel className='text-muted-foreground/70 px-2 text-[11px] font-medium tracking-wider uppercase'>
-        {title}
-      </SidebarGroupLabel>
-      <SidebarMenu>
-        {items.map((item) => {
-          const key = `${item.title}-${item.url || item.type}`
+  const groupKey = id ?? title
+  const hasActive = useMemo(() => groupHasActive(items, href), [items, href])
+  const [userOpen, setUserOpen] = useState(() =>
+    readGroupOpen(groupKey, !defaultCollapsed)
+  )
+  // Auto-expand when the group gains the active route, but let the user collapse
+  // it again afterward (mirrors SidebarMenuCollapsible). Deriving `open` from
+  // `hasActive` directly would *force* it open and make collapse impossible.
+  useEffect(() => {
+    if (hasActive) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUserOpen(true)
+    }
+  }, [hasActive])
+  // Icon-only sidebar has no room for group headers — never collapse there.
+  const iconMode = state === 'collapsed' && !isMobile
+  // Only groups that opt in (the surfaced settings groups, marked
+  // `defaultCollapsed`) get a toggle header + chevron. The few structural
+  // groups above them render a static, always-expanded label — no arrow.
+  const collapsible = defaultCollapsed !== undefined && !iconMode
 
-          // Special handling: dynamic chat presets list
-          if (item.type === 'chat-presets') {
-            return <ChatPresetsItem key={key} item={item as NavChatPresets} />
-          }
+  const menu = (
+    <SidebarMenu>
+      {items.map((item) => {
+        const key = `${item.title}-${item.url || item.type}`
 
-          // If no sub-items, render regular link
-          if (!item.items) {
-            return (
-              <SidebarMenuLink key={key} item={item as NavLink} href={href} />
-            )
-          }
+        // Special handling: dynamic chat presets list
+        if (item.type === 'chat-presets') {
+          return <ChatPresetsItem key={key} item={item as NavChatPresets} />
+        }
 
-          // In collapsed state on non-mobile, render dropdown menu
-          if (state === 'collapsed' && !isMobile) {
-            return (
-              <SidebarMenuCollapsedDropdown
-                key={key}
-                item={item as NavCollapsible}
-                href={href}
-              />
-            )
-          }
-
-          // Render collapsible menu
+        // If no sub-items, render regular link
+        if (!item.items) {
           return (
-            <SidebarMenuCollapsible
+            <SidebarMenuLink key={key} item={item as NavLink} href={href} />
+          )
+        }
+
+        // In collapsed state on non-mobile, render dropdown menu
+        if (state === 'collapsed' && !isMobile) {
+          return (
+            <SidebarMenuCollapsedDropdown
               key={key}
               item={item as NavCollapsible}
               href={href}
             />
           )
-        })}
-      </SidebarMenu>
-    </SidebarGroup>
+        }
+
+        // Render collapsible menu
+        return (
+          <SidebarMenuCollapsible
+            key={key}
+            item={item as NavCollapsible}
+            href={href}
+          />
+        )
+      })}
+    </SidebarMenu>
+  )
+
+  // Structural groups (and the icon-only sidebar): plain, always-expanded.
+  if (!collapsible) {
+    return (
+      <SidebarGroup className='px-2 py-1'>
+        <SidebarGroupLabel className='text-muted-foreground/70 px-2 text-[11px] font-medium tracking-wider uppercase'>
+          {title}
+        </SidebarGroupLabel>
+        {menu}
+      </SidebarGroup>
+    )
+  }
+
+  return (
+    <Collapsible
+      open={userOpen}
+      onOpenChange={(next) => {
+        setUserOpen(next)
+        writeGroupOpen(groupKey, next)
+      }}
+      className='group/navgroup'
+      render={<SidebarGroup className='px-2 py-1' />}
+    >
+      <CollapsibleTrigger
+        className='group/navgroup-trigger w-full'
+        render={
+          <SidebarGroupLabel
+            render={<button type='button' />}
+            className='text-muted-foreground/70 hover:text-muted-foreground flex w-full px-2 text-[11px] font-medium tracking-wider uppercase transition-colors'
+          />
+        }
+      >
+        <span className='flex-1 truncate text-left'>{title}</span>
+        <ChevronRight className='ms-auto size-3.5 shrink-0 transition-transform duration-200 group-data-[panel-open]/navgroup-trigger:rotate-90' />
+      </CollapsibleTrigger>
+      <CollapsibleContent>{menu}</CollapsibleContent>
+    </Collapsible>
   )
 }
 

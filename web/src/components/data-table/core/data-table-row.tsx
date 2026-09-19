@@ -28,12 +28,13 @@ import { TableCell, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
 import { TruncatedCell } from './truncated-cell'
-import type { DataTableColumnClassName } from './types'
+import type { DataTableColumnClassName, DataTableColumnStyle } from './types'
 
 type DataTableRowProps<TData> = {
   row: Row<TData>
   className?: string
   getColumnClassName?: DataTableColumnClassName
+  getColumnStyle?: DataTableColumnStyle
   cellRenderColumns?: TanstackTable<TData>['options']['columns']
 } & Omit<React.ComponentProps<typeof TableRow>, 'children'>
 
@@ -52,6 +53,7 @@ function DataTableRowInner<TData>({
   isSelected,
   className,
   getColumnClassName,
+  getColumnStyle,
   cellRenderColumns,
   visibleColumnIds,
   ...rowProps
@@ -79,6 +81,7 @@ function DataTableRowInner<TData>({
               renderedCell.isPrimitive && 'overflow-hidden',
               getColumnClassName?.(cell.column.id, 'cell')
             )}
+            style={getColumnStyle?.(cell.column.id, 'cell')}
           >
             {renderedCell.content}
           </TableCell>
@@ -104,6 +107,7 @@ const MemoizedDataTableRow = React.memo(DataTableRowInner, (prev, next) => {
     prev.isSelected === next.isSelected &&
     prev.visibleColumnIds === next.visibleColumnIds &&
     prev.getColumnClassName === next.getColumnClassName &&
+    prev.getColumnStyle === next.getColumnStyle &&
     prev.cellRenderColumns === next.cellRenderColumns
   )
 }) as typeof DataTableRowInner

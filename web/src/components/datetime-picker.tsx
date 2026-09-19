@@ -46,6 +46,37 @@ interface DateTimePickerProps {
   onChange?: (date: Date | undefined) => void
   placeholder?: string
   className?: string
+  ariaLabel?: string
+}
+
+function isValidDate(value: Date | undefined): value is Date {
+  return value !== undefined && !Number.isNaN(value.getTime())
+}
+
+function formatTime(date: Date): string {
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+function parseTime(time: string): [hours: number, minutes: number] | undefined {
+  const match = /^(\d{2}):(\d{2})$/.exec(time)
+  if (!match) return undefined
+
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours > 23 || minutes > 59) return undefined
+
+  return [hours, minutes]
+}
+
+function withTime(date: Date, time: string): Date | undefined {
+  const parts = parseTime(time)
+  if (!parts) return undefined
+
+  const nextDate = new Date(date)
+  nextDate.setHours(parts[0], parts[1], 0, 0)
+  return isValidDate(nextDate) ? nextDate : undefined
 }
 
 export function DateTimePicker({
@@ -53,6 +84,7 @@ export function DateTimePicker({
   onChange,
   placeholder,
   className,
+  ariaLabel,
 }: DateTimePickerProps) {
   const { t, i18n } = useTranslation()
   const placeholderText = placeholder ?? t('Select date')
@@ -60,27 +92,33 @@ export function DateTimePicker({
     calendarLocales[i18n.language as keyof typeof calendarLocales] ?? enUS
   const currentYear = new Date().getFullYear()
   const [open, setOpen] = React.useState(false)
-  const [date, setDate] = React.useState<Date | undefined>(value)
-  const [month, setMonth] = React.useState<Date | undefined>(value)
-  const [time, setTime] = React.useState<string>('00:00')
+  const [date, setDate] = React.useState<Date | undefined>(() =>
+    isValidDate(value) ? value : undefined
+  )
+  const [month, setMonth] = React.useState<Date | undefined>(() =>
+    isValidDate(value) ? value : undefined
+  )
+  const [time, setTime] = React.useState<string>(() =>
+    isValidDate(value) ? formatTime(value) : '00:00'
+  )
 
   React.useEffect(() => {
-    setDate(value)
-    setMonth(value)
-    if (value) {
-      const hours = value.getHours().toString().padStart(2, '0')
-      const minutes = value.getMinutes().toString().padStart(2, '0')
-      setTime(`${hours}:${minutes}`)
-    }
+    const nextDate = isValidDate(value) ? value : undefined
+    setDate(nextDate)
+    setMonth(nextDate)
+    setTime(nextDate ? formatTime(nextDate) : '00:00')
   }, [value])
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
-    if (selectedDate) {
-      const [hours, minutes] = time.split(':').map(Number)
-      const newDate = new Date(selectedDate)
-      newDate.setHours(hours, minutes, 0, 0)
+    if (isValidDate(selectedDate)) {
+      const fallbackTime = isValidDate(date) ? formatTime(date) : '00:00'
+      const newDate =
+        withTime(selectedDate, time) ??
+        withTime(selectedDate, fallbackTime) ??
+        selectedDate
       setDate(newDate)
       setMonth(newDate)
+      setTime(formatTime(newDate))
       onChange?.(newDate)
       setOpen(false)
     } else {
@@ -94,12 +132,17 @@ export function DateTimePicker({
     const newTime = e.target.value
     setTime(newTime)
 
-    if (date) {
-      const [hours, minutes] = newTime.split(':').map(Number)
-      const newDate = new Date(date)
-      newDate.setHours(hours, minutes, 0, 0)
-      setDate(newDate)
-      onChange?.(newDate)
+    if (!date) return
+    const newDate = withTime(date, newTime)
+    if (!newDate) return
+
+    setDate(newDate)
+    onChange?.(newDate)
+  }
+
+  const handleTimeBlur = () => {
+    if (!parseTime(time)) {
+      setTime(isValidDate(date) ? formatTime(date) : '00:00')
     }
   }
 
@@ -117,6 +160,7 @@ export function DateTimePicker({
           render={
             <Button
               variant='outline'
+              aria-label={ariaLabel}
               className={cn(
                 'flex-1 justify-between font-normal',
                 !date && 'text-muted-foreground'
@@ -145,8 +189,10 @@ export function DateTimePicker({
         type='time'
         value={time}
         onChange={handleTimeChange}
+        onBlur={handleTimeBlur}
         className='w-32 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
         disabled={!date}
+        aria-label={ariaLabel ? `${ariaLabel} time` : undefined}
       />
       {date && (
         <Button

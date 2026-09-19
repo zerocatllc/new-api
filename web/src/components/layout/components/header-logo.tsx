@@ -32,7 +32,7 @@ interface HeaderLogoProps {
  */
 export function HeaderLogo({
   src,
-  alt = 'logo',
+  alt = '',
   loading,
   logoLoaded,
   className,
@@ -41,8 +41,10 @@ export function HeaderLogo({
     <img
       src={src}
       alt={alt}
+      width={32}
+      height={32}
       className={cn(
-        'h-6 w-6 rounded-full transition-opacity duration-200',
+        'h-8 w-8 object-contain transition-opacity duration-200',
         !loading && logoLoaded ? 'opacity-100' : 'opacity-0',
         className
       )}

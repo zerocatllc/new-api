@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type Column } from '@tanstack/react-table'
+import type { Column } from '@tanstack/react-table'
 import { Check as CheckIcon, PlusCircle as PlusCircledIcon } from 'lucide-react'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -40,18 +40,57 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
+type FacetedFilterOption = {
+  label: string
+  value: string
+  icon?: React.ComponentType<{ className?: string }>
+  iconNode?: React.ReactNode
+  count?: number
+}
+
 type DataTableFacetedFilterProps<TData, TValue> = {
   column?: Column<TData, TValue>
   title?: string
-  options: {
-    label: string
-    value: string
-    icon?: React.ComponentType<{ className?: string }>
-    iconNode?: React.ReactNode
-    count?: number
-  }[]
+  options: FacetedFilterOption[]
   /** Enable single select mode (only one option can be selected at a time) */
   singleSelect?: boolean
+}
+
+function renderFacetedFilterOptionIcon(option: FacetedFilterOption) {
+  if (option.iconNode) {
+    return (
+      <span className='text-muted-foreground flex size-4 items-center justify-center'>
+        {option.iconNode}
+      </span>
+    )
+  }
+  if (option.icon) {
+    const Icon = option.icon
+    return <Icon className='text-muted-foreground size-4' />
+  }
+  return null
+}
+
+function renderFacetedFilterOptionCount(
+  option: FacetedFilterOption,
+  facets: Map<string, number> | undefined
+) {
+  if (typeof option.count === 'number') {
+    return (
+      <span className='text-muted-foreground ms-auto flex h-4 min-w-4 items-center justify-center font-mono text-xs'>
+        {option.count}
+      </span>
+    )
+  }
+  const facetCount = facets?.get(option.value)
+  if (facetCount) {
+    return (
+      <span className='ms-auto flex h-4 w-4 items-center justify-center font-mono text-xs'>
+        {facetCount}
+      </span>
+    )
+  }
+  return null
 }
 
 function DataTableFacetedFilterInner<TData, TValue>({
@@ -143,28 +182,14 @@ function DataTableFacetedFilterInner<TData, TValue>({
                     >
                       <CheckIcon className={cn('text-background h-4 w-4')} />
                     </div>
-                    {option.iconNode ? (
-                      <span className='text-muted-foreground flex size-4 items-center justify-center'>
-                        {option.iconNode}
-                      </span>
-                    ) : option.icon ? (
-                      <option.icon className='text-muted-foreground size-4' />
-                    ) : null}
+                    {renderFacetedFilterOptionIcon(option)}
                     <span
                       className='min-w-0 flex-1 truncate'
                       title={t(option.label)}
                     >
                       {t(option.label)}
                     </span>
-                    {typeof option.count === 'number' ? (
-                      <span className='text-muted-foreground ms-auto flex h-4 min-w-4 items-center justify-center font-mono text-xs'>
-                        {option.count}
-                      </span>
-                    ) : facets?.get(option.value) ? (
-                      <span className='ms-auto flex h-4 w-4 items-center justify-center font-mono text-xs'>
-                        {facets.get(option.value)}
-                      </span>
-                    ) : null}
+                    {renderFacetedFilterOptionCount(option, facets)}
                   </CommandItem>
                 )
               })}
@@ -209,5 +234,5 @@ function getNextSelectedValues(
     nextSelectedValues.add(optionValue)
   }
 
-  return Array.from(nextSelectedValues)
+  return [...nextSelectedValues]
 }

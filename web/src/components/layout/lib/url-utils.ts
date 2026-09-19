@@ -61,7 +61,16 @@ export function checkIsActive(
 ): boolean {
   const hrefWithoutQuery = href.split('?')[0]
 
-  if (item.activeUrls?.some((url) => urlToString(url) === hrefWithoutQuery)) {
+  if (
+    item.activeUrls?.some((url) => {
+      const activeUrl = urlToString(url)
+      if (!activeUrl) return false
+      const base = normalizeHref(activeUrl)
+      return (
+        hrefWithoutQuery === base || hrefWithoutQuery.startsWith(`${base}/`)
+      )
+    })
+  ) {
     return true
   }
 
@@ -87,8 +96,9 @@ export function checkIsActive(
         }
         return false
       })
-    )
+    ) {
       return true
+    }
   }
 
   // For regular link items, check the item's URL

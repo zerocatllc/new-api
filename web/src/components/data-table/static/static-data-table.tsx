@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 
 import { TruncatedCell } from '../core/truncated-cell'
@@ -44,6 +45,7 @@ type StaticDataTableBaseProps = {
 type StaticDataTableDataProps<TData = unknown> = StaticDataTableBaseProps & {
   columns: StaticDataTableColumn<TData>[]
   data: TData[]
+  mobileCards?: boolean
   getRowKey?: (row: TData, index: number) => React.Key
   getRowClassName?: (row: TData, index: number) => string | undefined
   renderRow?: (row: TData, index: number) => React.ReactNode
@@ -74,6 +76,28 @@ export type StaticDataTableColumn<TData = unknown> = {
 export function StaticDataTable<TData = unknown>(
   props: StaticDataTableProps<TData>
 ) {
+  if (props.columns !== undefined && props.mobileCards === true) {
+    return <ResponsiveStaticDataTable {...props} />
+  }
+
+  return <StaticDataTableDesktop {...props} />
+}
+
+function ResponsiveStaticDataTable<TData>(
+  props: StaticDataTableDataProps<TData>
+) {
+  const isMobile = useMediaQuery('(max-width: 640px)')
+
+  return isMobile ? (
+    <StaticDataTableMobileCards {...props} />
+  ) : (
+    <StaticDataTableDesktop {...props} />
+  )
+}
+
+function StaticDataTableDesktop<TData = unknown>(
+  props: StaticDataTableProps<TData>
+) {
   const { className, tableClassName, containerProps, tableProps } = props
 
   return (
@@ -88,6 +112,87 @@ export function StaticDataTable<TData = unknown>(
           props.children
         )}
       </Table>
+    </div>
+  )
+}
+
+export function StaticDataTableMobileCards<TData>({
+  columns,
+  data,
+  getRowKey,
+  getRowClassName,
+  empty,
+  emptyContent,
+  emptyClassName,
+  className,
+}: StaticDataTableDataProps<TData>) {
+  const isEmpty = empty ?? data.length === 0
+  const selectColumns = columns.filter((column) => column.id === 'select')
+  const actionColumns = columns.filter((column) => column.id === 'actions')
+  const contentColumns = columns.filter(
+    (column) => column.id !== 'select' && column.id !== 'actions'
+  )
+
+  return (
+    <div
+      data-slot='static-data-table-mobile'
+      className={cn('space-y-3', className)}
+    >
+      {isEmpty ? (
+        <div
+          className={cn(
+            staticDataTableClassNames.container,
+            'text-muted-foreground px-4 py-10 text-center text-sm',
+            emptyClassName
+          )}
+        >
+          {emptyContent}
+        </div>
+      ) : (
+        data.map((row, index) => (
+          <div
+            key={getRowKey?.(row, index) ?? index}
+            className={cn(
+              staticDataTableClassNames.container,
+              'bg-card',
+              getRowClassName?.(row, index)
+            )}
+          >
+            {(selectColumns.length > 0 || actionColumns.length > 0) && (
+              <div className='flex min-h-12 items-center justify-between gap-3 border-b px-3 py-2'>
+                <div className='flex items-center gap-2'>
+                  {selectColumns.map((column) => (
+                    <React.Fragment key={column.id}>
+                      {column.cell?.(row, index)}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className='flex items-center justify-end gap-1'>
+                  {actionColumns.map((column) => (
+                    <React.Fragment key={column.id}>
+                      {column.cell?.(row, index)}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className='divide-y'>
+              {contentColumns.map((column) => (
+                <div
+                  key={column.id}
+                  className='grid min-h-12 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-3 px-3 py-2'
+                >
+                  <div className='text-muted-foreground min-w-0 text-sm font-medium'>
+                    {column.header}
+                  </div>
+                  <div className='min-w-0'>{column.cell?.(row, index)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
     </div>
   )
 }

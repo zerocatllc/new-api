@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link, useLocation } from '@tanstack/react-router'
 import { ExternalLink, Loader2, ChevronRight } from 'lucide-react'
-import { useMemo, useCallback, useRef, useState } from 'react'
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -165,6 +165,15 @@ export function ChatPresetsItem({ item }: { item: NavChatPresets }) {
   const href = useLocation({ select: (location) => location.href })
   const [loadingPresetId, setLoadingPresetId] = useState<string | null>(null)
   const loadingPresetIdRef = useRef<string | null>(null)
+  const normalizedHref = normalizeHref(href)
+  const isChatRoute = normalizedHref.startsWith('/chat')
+  const [chatMenuOpen, setChatMenuOpen] = useState(() => isChatRoute)
+
+  useEffect(() => {
+    if (isChatRoute) {
+      setChatMenuOpen(true)
+    }
+  }, [isChatRoute])
 
   const visiblePresets = useMemo(
     () => chatPresets.filter((preset) => preset.type !== 'fluent'),
@@ -222,8 +231,6 @@ export function ChatPresetsItem({ item }: { item: NavChatPresets }) {
     [serverAddress, setOpenMobile, t]
   )
 
-  const normalizedHref = normalizeHref(href)
-
   // Don't render if no visible presets
   if (visiblePresets.length === 0) {
     return null
@@ -259,7 +266,8 @@ export function ChatPresetsItem({ item }: { item: NavChatPresets }) {
   // Expanded state - render collapsible menu
   return (
     <Collapsible
-      defaultOpen={normalizedHref.startsWith('/chat')}
+      open={chatMenuOpen}
+      onOpenChange={setChatMenuOpen}
       className='group/collapsible'
       render={<SidebarMenuItem />}
     >

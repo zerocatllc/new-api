@@ -243,9 +243,28 @@ function ThemeConfig() {
   )
 }
 
+/**
+ * Background gradient previewed in a preset's swatch tile. `default` blends the
+ * live neutral tokens; `custom` reflects the user's chosen accent; the rest use
+ * their static swatch pair.
+ */
+function presetSwatchBackground(
+  preset: (typeof THEME_PRESETS)[number],
+  customColor: string
+): string {
+  if (preset.value === 'default') {
+    return 'linear-gradient(135deg, var(--background) 0%, var(--muted) 50%, var(--foreground) 100%)'
+  }
+  if (preset.value === 'custom') {
+    return `linear-gradient(135deg, ${customColor} 0%, color-mix(in oklch, ${customColor} 55%, #000) 100%)`
+  }
+  return `linear-gradient(135deg, ${preset.swatches[0]} 0%, ${preset.swatches[1] ?? preset.swatches[0]} 100%)`
+}
+
 function PresetConfig() {
   const { t } = useTranslation()
-  const { defaults, customization, setPreset } = useThemeCustomization()
+  const { defaults, customization, setPreset, setCustomColor } =
+    useThemeCustomization()
   return (
     <div>
       <SectionTitle
@@ -278,10 +297,10 @@ function PresetConfig() {
                 aria-hidden='true'
                 className='absolute inset-0 rounded-md'
                 style={{
-                  background:
-                    preset.value === 'default'
-                      ? 'linear-gradient(135deg, oklch(0.68 0.2 25) 0%, oklch(0.8 0.17 85) 25%, oklch(0.72 0.18 155) 50%, oklch(0.66 0.19 245) 75%, oklch(0.68 0.2 315) 100%)'
-                      : `linear-gradient(135deg, ${preset.swatches[0]} 0%, ${preset.swatches[1] ?? preset.swatches[0]} 100%)`,
+                  background: presetSwatchBackground(
+                    preset,
+                    customization.customColor
+                  ),
                 }}
               />
               <CircleCheck
@@ -298,6 +317,23 @@ function PresetConfig() {
           </Item>
         ))}
       </Radio>
+      {customization.preset === 'custom' && (
+        <label className='border-border bg-card mt-3 flex items-center justify-between gap-3 rounded-md border px-3 py-2'>
+          <span className='text-sm font-medium'>{t('Custom color')}</span>
+          <span className='flex items-center gap-2'>
+            <span className='text-muted-foreground font-mono text-xs uppercase'>
+              {customization.customColor}
+            </span>
+            <input
+              type='color'
+              value={customization.customColor}
+              onChange={(e) => setCustomColor(e.target.value)}
+              aria-label={t('Custom color')}
+              className='size-7 cursor-pointer rounded-md border-none bg-transparent p-0'
+            />
+          </span>
+        </label>
+      )}
     </div>
   )
 }
