@@ -6,7 +6,16 @@ import { pluginReact } from '@rsbuild/plugin-react'
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss'
 import { tanstackRouter } from '@tanstack/router-plugin/rspack'
 
+import { THEME_COOKIE_NAME } from './src/lib/theme-cookie'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// `<%= %>` interpolation does not escape, so every template parameter must be
+// pre-escaped for the context it lands in (HTML text/attribute vs. inline JS).
+const escapeHtml = (value: string) =>
+  value.replaceAll(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)
+const toJsStringLiteral = (value: string) =>
+  JSON.stringify(value).replaceAll('<', '\\u003c')
 
 export default defineConfig(({ envMode }) => {
   const env = loadEnv({ mode: envMode, prefixes: ['VITE_'] })
@@ -24,7 +33,8 @@ export default defineConfig(({ envMode }) => {
   ) as Record<string, { target: string; changeOrigin: boolean }>
 
   return {
-    plugins: [pluginReact(), pluginTailwindcss({ optimize: false })],
+    // optimize CSS (minify + dedupe) in production only; keep dev fast/unoptimized.
+    plugins: [pluginReact(), pluginTailwindcss({ optimize: isProd })],
     // Rsbuild 2: replaces deprecated `performance.chunkSplit` (RSPack 2 aligned)
     splitChunks: {
       preset: 'default',
@@ -64,6 +74,16 @@ export default defineConfig(({ envMode }) => {
     },
     html: {
       template: './index.html',
+      templateParameters: {
+        // Baked into the first-paint splash so the brand name shows before
+        // any bundle or cached /api/status is available. Set per deployment
+        // via frontend/.env or the build environment. Two encodings of the
+        // same value: HTML-escaped for <title>/<meta>, JS-string-literal
+        // (quotes included, `<` escaped) for the splash script.
+        splashSiteName: escapeHtml(process.env.PUBLIC_SITE_NAME ?? ''),
+        splashSiteNameJs: toJsStringLiteral(process.env.PUBLIC_SITE_NAME ?? ''),
+        themeCookieName: THEME_COOKIE_NAME,
+      },
     },
     server: {
       host: '0.0.0.0',

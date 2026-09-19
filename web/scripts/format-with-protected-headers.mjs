@@ -21,10 +21,14 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const mode = process.argv[2]
+// Optional explicit file list (paths relative to frontend/). Without it the
+// whole tree is formatted; with it (the pre-commit hook's per-file path) only
+// the named files are stripped, formatted, and restored.
+const fileArgs = process.argv.slice(3)
 
 if (mode !== '--check' && mode !== '--write') {
   console.error(
-    'Usage: node scripts/format-with-protected-headers.mjs --check|--write'
+    'Usage: node scripts/format-with-protected-headers.mjs --check|--write [files...]'
   )
   process.exit(2)
 }
@@ -131,9 +135,9 @@ function listChangedFiles(before, files) {
   return changed
 }
 
-const files = walk(root).filter(
-  (file) => statSync(file).size < 10 * 1024 * 1024
-)
+const files = (
+  fileArgs.length > 0 ? fileArgs.map((file) => join(root, file)) : walk(root)
+).filter((file) => statSync(file).size < 10 * 1024 * 1024)
 const before = mode === '--check' ? snapshotFiles(files) : null
 let headers = new Map()
 let exitCode = 0
@@ -141,8 +145,15 @@ let exitCode = 0
 try {
   headers = stripProtectedHeaders(files)
   const result = spawnSync(
-    'oxfmt',
-    ['-c', '.oxfmtrc.json', '--ignore-path', '.gitignore', '--write', '.'],
+    join(root, 'node_modules', '.bin', 'oxfmt'),
+    [
+      '-c',
+      '.oxfmtrc.json',
+      '--ignore-path',
+      '.gitignore',
+      '--write',
+      ...(fileArgs.length > 0 ? fileArgs : ['.']),
+    ],
     {
       cwd: root,
       stdio: 'inherit',

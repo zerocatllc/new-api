@@ -17,9 +17,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 @import 'tailwindcss';
+/* Tailwind Typography: powers the `prose` classes used by the markdown
+ * renderer (announcements, model descriptions). Without this plugin every
+ * `prose-*` class is a no-op and preflight strips heading sizes / list
+ * markers, leaving markdown bodies rendered as flat unstyled text. */
+@plugin '@tailwindcss/typography';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/public-sans';
+/* rixapi typography: Inter for body copy, Manrope for headings. Loaded
+ * globally as variable fonts so the cool, modern rixapi look matches 1:1
+ * with no FOUT. See `--font-sans` / `--font-heading` in theme.css.
+ * Manrope is NOT imported here: index.html self-hosts it (public/fonts)
+ * with an inline @font-face + preload so the first-paint splash and the
+ * app share one font file instead of downloading it twice. */
+@import '@fontsource-variable/inter';
 /* Editorial serif (Lora) backing the `serif` font axis and the Anthropic
  * preset's default typography. See `--font-serif` in theme.css for the
  * full Latin + CJK fallback stack and `theme-presets.css` for the cascade
@@ -100,6 +112,27 @@ For commercial licensing, please contact support@quantumnous.com
      * (defined in theme.css, swapped by `[data-theme-font='...']` blocks
      * in theme-presets.css). Defaults to the project's humanist sans. */
     font-family: var(--font-body);
+    /* Crisp, lighter text matching the rixapi reference. Without this, macOS
+     * defaults to subpixel ("auto") smoothing which renders Inter heavier and
+     * blurrier; the reference uses grayscale antialiasing site-wide. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* 14px base body copy, mirroring the rixapi reference exactly. Tailwind
+     * `text-*` and spacing utilities are root-relative (rem @ 16px) so they
+     * are unaffected; only text that inherits the body size (no explicit
+     * `text-*`) drops 16px → 14px, removing the 16/14 mixed-size look and
+     * matching the reference's compact density across tables and pages. */
+    font-size: 0.875rem;
+  }
+
+  /* rixapi heading typography: semantic headings render in Manrope while body
+   * copy stays Inter, matching :3010. Components that build titles from
+   * non-heading elements can opt in with the `font-heading` utility. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
   }
 
   /* Keep sticky headers stable while primitives lock body scrolling. */
@@ -146,23 +179,8 @@ For commercial licensing, please contact support@quantumnous.com
   }
 }
 
-/* Override auto-skeleton-react inline styles with Vercel shimmer */
-.auto-skeleton-fade [class^='skeleton-'] {
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 0%,
-    var(--skeleton-base) 33%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 67%,
-    var(--skeleton-base) 100%
-  ) !important;
-  background-size: 300% 100% !important;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite !important;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer,
-  .auto-skeleton-fade [class^='skeleton-'] {
+  .skeleton-shimmer {
     animation: none !important;
     background: var(--skeleton-base) !important;
   }
@@ -428,6 +446,25 @@ For commercial licensing, please contact support@quantumnous.com
   .scroll-container:hover .animate-scroll-down {
     animation-play-state: paused;
   }
+
+  /* Horizontal marquee for the provider strip */
+  @keyframes marquee-x {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-marquee-x {
+    animation: marquee-x 40s linear infinite;
+    will-change: transform;
+  }
+
+  .marquee-container:hover .animate-marquee-x {
+    animation-play-state: paused;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -435,6 +472,7 @@ For commercial licensing, please contact support@quantumnous.com
   .animate-appear-zoom,
   .animate-scroll-up,
   .animate-scroll-down,
+  .animate-marquee-x,
   [data-slot='table'] tbody tr {
     animation: none !important;
     opacity: 1;
@@ -690,12 +728,15 @@ For commercial licensing, please contact support@quantumnous.com
  * two-layer mask (content-box XOR full box) keeps only a `padding`-wide
  * ring visible, so the highlight hugs the rounded perimeter. Animating
  * the gradient's start angle makes the bright segment travel around all
- * four edges and corners without touching the interior. */
+ * four edges and corners without touching the interior.
+ * The var() fallback keeps the ring visible where @property is unsupported
+ * (Safari < 16.4, Firefox < 128): the unregistered variable animates
+ * discretely there, so the ring renders static instead of disappearing. */
 .auto-group-flow-border {
   padding: 1.5px;
   border-radius: inherit;
   background: conic-gradient(
-    from var(--auto-group-flow-angle),
+    from var(--auto-group-flow-angle, 0deg),
     transparent 0deg,
     transparent 240deg,
     color-mix(in oklch, var(--primary) 45%, transparent) 300deg,
@@ -728,5 +769,32 @@ For commercial licensing, please contact support@quantumnous.com
 @media (prefers-reduced-motion: reduce) {
   .auto-group-flow-border {
     display: none;
+  }
+}
+
+/* Squish press (kinetics recipe): the press snaps down fast, the release
+ * springs back with a slight overshoot. Scale rides its own channel so the
+ * button's color transitions keep their own timing. */
+.btn-squish {
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    border-color 0.2s,
+    scale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.btn-squish:active {
+  scale: 0.95;
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    border-color 0.2s,
+    scale 0.08s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-squish,
+  .btn-squish:active {
+    transition: none;
+    scale: none;
   }
 }

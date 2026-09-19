@@ -1,0 +1,42 @@
+# Workers Assets custom headers. Lives in public/ so rsbuild copies it to
+# dist/_headers on every build → applied on every deploy.
+# https://developers.cloudflare.com/workers/static-assets/headers/
+#
+# /static/* are content-hashed (e.g. index.6fbdca.js) → safe to cache forever.
+# Overrides the Workers Assets default (public, max-age=0, must-revalidate),
+# so browsers stop revalidating hashed assets on every load.
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Non-hashed top-level assets (brand + pay icons, default avatars). They change
+# rarely but aren't content-hashed, so the Workers Assets default
+# (public, max-age=0, must-revalidate) makes browsers revalidate them on every
+# load. A 1-day cache drops those repeat round-trips while still refreshing
+# within a day of a rebrand. index.html is deliberately left on the default so
+# every visit picks up the newest hashed chunks.
+/avatars/*
+  Cache-Control: public, max-age=86400
+/favicon.ico
+  Cache-Control: public, max-age=86400
+/favicon-32.png
+  Cache-Control: public, max-age=86400
+/favicon-round.png
+  Cache-Control: public, max-age=86400
+/logo.png
+  Cache-Control: public, max-age=86400
+/zerocat-logo.svg
+  Cache-Control: public, max-age=86400
+/zero-cat-logo-loop.webp
+  Cache-Control: public, max-age=86400
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+/pay-apple.png
+  Cache-Control: public, max-age=86400
+/pay-card.png
+  Cache-Control: public, max-age=86400
+/pay-google.png
+  Cache-Control: public, max-age=86400
+/waffo-logo-dark.svg
+  Cache-Control: public, max-age=86400
+/waffo-logo-light.svg
+  Cache-Control: public, max-age=86400
