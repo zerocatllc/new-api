@@ -20,10 +20,6 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import z from 'zod'
 
 import { Models } from '@/features/models'
-import {
-  MODELS_SECTION_IDS,
-  MODELS_DEFAULT_SECTION,
-} from '@/features/models/section-registry'
 import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -49,7 +45,7 @@ const modelsSearchSchema = z.object({
 })
 
 export const Route = createFileRoute('/_authenticated/models/$section')({
-  beforeLoad: ({ params }) => {
+  beforeLoad: async ({ params }) => {
     const { auth } = useAuthStore.getState()
 
     if (!auth.user || auth.user.role < ROLE.ADMIN) {
@@ -58,6 +54,8 @@ export const Route = createFileRoute('/_authenticated/models/$section')({
       })
     }
 
+    const { MODELS_SECTION_IDS, MODELS_DEFAULT_SECTION } =
+      await import('@/features/models/section-registry')
     const validSections = MODELS_SECTION_IDS as unknown as string[]
     if (!validSections.includes(params.section)) {
       throw redirect({

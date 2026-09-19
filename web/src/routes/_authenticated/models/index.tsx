@@ -18,12 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { MODELS_DEFAULT_SECTION } from '@/features/models/section-registry'
 import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
 
 export const Route = createFileRoute('/_authenticated/models/')({
-  beforeLoad: () => {
+  beforeLoad: async () => {
     const { auth } = useAuthStore.getState()
 
     if (!auth.user || auth.user.role < ROLE.ADMIN) {
@@ -32,6 +31,8 @@ export const Route = createFileRoute('/_authenticated/models/')({
       })
     }
 
+    const { MODELS_DEFAULT_SECTION } =
+      await import('@/features/models/section-registry')
     throw redirect({
       to: '/models/$section',
       params: { section: MODELS_DEFAULT_SECTION },

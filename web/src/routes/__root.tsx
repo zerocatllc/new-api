@@ -23,6 +23,7 @@ import {
   Outlet,
   redirect,
   useNavigate,
+  useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { useEffect } from 'react'
@@ -44,12 +45,59 @@ import { subscribeAuthSessionEvents } from '@/lib/auth-session-sync'
 import { resolveLegacyRoute } from '@/lib/legacy-route'
 import { useAuthStore } from '@/stores/auth-store'
 
+const SPLASH_SHOW_DELAY_MS = 150
+const SPLASH_APPEAR_MS = 300
+const SPLASH_STAGGER_MS = 40
+const SPLASH_RISE_MS = 500
+const SPLASH_SETTLE_MS = 150
+const SPLASH_FADE_MS = 240
+
+function dismissSplash(splash: HTMLElement) {
+  splash.classList.add('app-loading-leave')
+  return window.setTimeout(() => splash.remove(), SPLASH_FADE_MS)
+}
+
 function RootComponent() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const routerStatus = useRouterState({ select: (state) => state.status })
 
   // Load system configuration (logo, system name, etc.) from backend
   useSystemConfig({ autoLoad: true })
+
+  useEffect(() => {
+    if (routerStatus !== 'idle') return
+    const splash = document.querySelector<HTMLElement>('#app-loading')
+    if (!splash) return
+
+    const elapsed = performance.now()
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches
+    if (reduceMotion || elapsed < SPLASH_SHOW_DELAY_MS) {
+      splash.remove()
+      return
+    }
+
+    const appearedAt = SPLASH_SHOW_DELAY_MS + SPLASH_APPEAR_MS
+    const letterCount = splash.querySelectorAll('.brand span').length
+    const revealEnd =
+      SPLASH_SHOW_DELAY_MS +
+      Math.max(0, letterCount - 1) * SPLASH_STAGGER_MS +
+      SPLASH_RISE_MS
+    const hold =
+      elapsed < appearedAt
+        ? 0
+        : Math.max(0, revealEnd + SPLASH_SETTLE_MS - elapsed)
+    let removeTimer: number | undefined
+    const leaveTimer = window.setTimeout(() => {
+      removeTimer = dismissSplash(splash)
+    }, hold)
+    return () => {
+      window.clearTimeout(leaveTimer)
+      if (removeTimer !== undefined) window.clearTimeout(removeTimer)
+    }
+  }, [routerStatus])
 
   useEffect(() => {
     const aff = new URLSearchParams(window.location.search).get('aff')?.trim()
@@ -128,7 +176,10 @@ export const Route = createRootRouteWithContext<{
     // 只检查 setup 状态（如果需要）
     if (needsSetupCheck) {
       const [status] = await Promise.all([
-        getSetupStatus().catch((error) => {
+        getSetupStatus({
+          skipBusinessError: true,
+          skipErrorHandler: true,
+        }).catch((error) => {
           if (import.meta.env.DEV) {
             // eslint-disable-next-line no-console
             console.warn('[root.beforeLoad] setup status check failed', error)
@@ -147,6 +198,7 @@ export const Route = createRootRouteWithContext<{
     } else {
       await authBootstrap
     }
+    return { authBootstrapResult: await authBootstrap }
   },
   component: RootComponent,
   notFoundComponent: NotFoundError,

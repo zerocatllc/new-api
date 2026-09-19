@@ -17,10 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
-import { Loader2, MessageCircleWarning } from 'lucide-react'
+import { MessageCircleWarning } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { LoadingState } from '@/components/loading-state'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useActiveChatKey } from '@/features/chat/hooks/use-active-chat-key'
@@ -114,12 +115,10 @@ function ChatRouteComponent() {
 
   if (requiresActiveKey && isPending) {
     return (
-      <div className='flex h-full flex-col items-center justify-center gap-4'>
-        <Loader2 className='text-muted-foreground h-8 w-8 animate-spin' />
-        <p className='text-muted-foreground text-sm'>
-          {t('Preparing your chat link…')}
-        </p>
-      </div>
+      <LoadingState
+        className='h-full'
+        message={t('Preparing your chat link…')}
+      />
     )
   }
 
@@ -153,11 +152,17 @@ function ChatRouteComponent() {
     )
   }
 
+  // The embedded chat UI is an admin-configured, cross-origin application that
+  // needs script execution plus its own storage to work at all, so
+  // `allow-same-origin` here grants the frame its own origin rather than the
+  // parent's. Dropping it would break every chat preset.
+  /* oxlint-disable react/iframe-missing-sandbox */
   return (
     <iframe
       src={iframeSrc}
       key={iframeSrc}
       className='h-full w-full border-0'
+      sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads'
       allow='camera; microphone'
       title={`Chat preset: ${preset.name}`}
     />
