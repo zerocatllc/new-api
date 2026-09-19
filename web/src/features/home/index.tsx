@@ -16,117 +16,96 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
-import { RichContent } from '@/components/rich-content'
-import { useTheme } from '@/context/theme-provider'
-import { isLikelyHtml } from '@/lib/content-format'
+import { LoadingState } from '@/components/loading-state'
+import { Markdown } from '@/components/ui/markdown'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { CTA, Features, Hero, HowItWorks, Stats } from './components'
+import {
+  AnnouncementBanner,
+  CodeShowcase,
+  ProviderMarquee,
+  WhyChooseUs,
+} from './components'
+import { LandingExperience } from './components/landing/landing-experience'
 import { useHomePageContent } from './hooks'
+import { useHomeSections } from './hooks/use-home-sections'
 
 export function Home() {
-  const { i18n, t } = useTranslation()
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-  const { resolvedTheme } = useTheme()
+  const { t } = useTranslation()
   const { auth } = useAuthStore()
   const isAuthenticated = !!auth.user
   const { content, isLoaded, isUrl } = useHomePageContent()
+  const { banner } = useHomeSections()
 
-  const syncIframePreferences = useCallback(() => {
-    try {
-      iframeRef.current?.contentWindow?.postMessage(
-        { themeMode: resolvedTheme },
-        '*'
-      )
-      iframeRef.current?.contentWindow?.postMessage(
-        { lang: i18n.language },
-        '*'
-      )
-    } catch {
-      // Cross-origin frames may reject access while navigating.
-    }
-  }, [i18n.language, resolvedTheme])
-
-  useEffect(() => {
-    if (isUrl) {
-      syncIframePreferences()
-    }
-  }, [isUrl, syncIframePreferences])
+  // Landing announcement strip (rendered inside the sticky header): only a
+  // real backend banner shows one; without it the header stays a single row.
+  const landingAnnouncement = banner
+    ? {
+        content: banner.content,
+        linkText: banner.linkText,
+        linkUrl: banner.linkUrl,
+      }
+    : undefined
 
   if (!isLoaded) {
     return (
       <PublicLayout showMainContainer={false}>
-        <main className='flex min-h-screen items-center justify-center'>
-          <div className='text-muted-foreground'>{t('Loading...')}</div>
+        {/* Cold cache: the splash retires once the router is idle, so a slow
+            content fetch needs its own brand loading state or the page sits
+            blank under the header. */}
+        <main aria-busy='true' className='min-h-screen'>
+          <LoadingState size='lg' className='min-h-[60vh]' />
         </main>
       </PublicLayout>
     )
   }
 
+  // Admin-authored custom home content (Markdown or iframe URL) takes over the
+  // whole page when present, matching rixapi's homepage_content behavior.
   if (content) {
-    if (isUrl) {
-      return (
-        <PublicLayout showMainContainer={false}>
-          {/*
-            allow-top-navigation-by-user-activation: the custom home page URL is
-            admin-configured (trusted); this lets its target="_top" nav/menu links
-            navigate the top-level window on user click. The default sandbox blocks
-            this on desktop, while some mobile browsers allow it via allow-popups,
-            causing inconsistent behavior. This token only permits user-activated
-            top-level navigation and does NOT grant same-origin access.
-          */}
-          <iframe
-            ref={iframeRef}
-            src={content}
-            className='h-screen w-full border-none'
-            title={t('Custom Home Page')}
-            sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-top-navigation-by-user-activation'
-            onLoad={syncIframePreferences}
-          />
-        </PublicLayout>
-      )
-    }
-
-    const contentIsHtml = isLikelyHtml(content)
-
-    if (contentIsHtml) {
-      return (
-        <PublicLayout showMainContainer={false}>
-          <RichContent
-            mode='html'
-            htmlVariant='isolated'
-            content={content}
-            className='custom-home-content'
-          />
-        </PublicLayout>
-      )
-    }
-
     return (
-      <PublicLayout>
-        <div className='mx-auto max-w-6xl px-4 py-8'>
-          <RichContent
-            mode='markdown'
-            content={content}
-            className='custom-home-content'
-          />
-        </div>
+      <PublicLayout showMainContainer={false}>
+        <AnnouncementBanner />
+        <main className='overflow-x-hidden'>
+          {isUrl ? (
+            <iframe
+              src={content}
+              className='h-screen w-full border-none'
+              title={t('Custom Home Page')}
+              sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts'
+            />
+          ) : (
+            <div className='container mx-auto py-8'>
+              <Markdown className='custom-home-content'>{content}</Markdown>
+            </div>
+          )}
+        </main>
       </PublicLayout>
     )
   }
 
   return (
-    <PublicLayout showMainContainer={false}>
-      <Hero isAuthenticated={isAuthenticated} />
-      <Stats />
-      <Features />
-      <HowItWorks />
-      <CTA isAuthenticated={isAuthenticated} />
+    <PublicLayout
+      showMainContainer={false}
+      headerProps={{
+        variant: 'landing',
+        announcement: landingAnnouncement,
+        // Logo, site name and nav links all come from the backend
+        // (systemLogo / systemName / useTopNavLinks) — nothing hardcoded here.
+      }}
+    >
+      <main data-landing-variant='signal' className='overflow-x-clip'>
+        <LandingExperience isAuthenticated={isAuthenticated} />
+        <div className='divide-border divide-y'>
+          <ProviderMarquee />
+          <WhyChooseUs />
+          <CodeShowcase isAuthenticated={isAuthenticated} />
+        </div>
+      </main>
       <Footer />
     </PublicLayout>
   )

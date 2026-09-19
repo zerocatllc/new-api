@@ -16,9 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { getPricing } from '@/features/pricing/api'
+import type { PricingData } from '@/features/pricing/types'
 import { api } from '@/lib/api'
 
 import type { HomePageContentResponse } from './types'
+
+const silentBackgroundRequest = {
+  skipBusinessError: true,
+  skipErrorHandler: true,
+} as const
 
 // ============================================================================
 // Home Page APIs
@@ -29,11 +36,47 @@ import type { HomePageContentResponse } from './types'
  * Returns Markdown/HTML content or iframe URL
  */
 export async function getHomePageContent(): Promise<HomePageContentResponse> {
-  // See getNotice in @/lib/api: the global `Cache-Control: no-store` is dropped
-  // so the browser can hold an ETag and revalidate, letting the server answer
-  // 304. Server-side `no-cache` keeps admin edits immediate.
   const res = await api.get('/api/home_page_content', {
+    ...silentBackgroundRequest,
     headers: { 'Cache-Control': null },
   })
   return res.data
+}
+
+// ============================================================================
+// Home Stats
+// ============================================================================
+
+export interface HomeStats {
+  /** Number of enabled models exposed by /api/pricing */
+  models: number
+  /** Number of distinct providers/vendors exposed by /api/pricing */
+  providers: number
+  /** Average service uptime/success rate (percentage), best-effort */
+  uptimePct: number
+}
+
+const DEFAULT_UPTIME_PCT = 99.9
+
+export async function getHomePricing(): Promise<PricingData> {
+  return getPricing(silentBackgroundRequest)
+}
+
+/**
+ * Aggregate the landing-page stat counters. Models/providers come from live
+ * /api/pricing; the Uptime SLA is the fixed advertised figure (99.9%).
+ */
+export async function getHomeStats(): Promise<HomeStats> {
+  const pricing = await getHomePricing()
+  if (!pricing.success) {
+    throw new Error(
+      `getHomeStats: /api/pricing returned success=false${
+        pricing.message ? `: ${pricing.message}` : ''
+      }`
+    )
+  }
+  const models = Array.isArray(pricing.data) ? pricing.data.length : 0
+  const providers = Array.isArray(pricing.vendors) ? pricing.vendors.length : 0
+
+  return { models, providers, uptimePct: DEFAULT_UPTIME_PCT }
 }

@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import type { TFunction } from 'i18next'
 import { Activity, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -143,43 +144,45 @@ export function UptimeSparkline(props: UptimeSparklineProps) {
 // Uptime status row — sparkline + summary text + status icon
 // ---------------------------------------------------------------------------
 
+type UptimeStatus = 'operational' | 'minor' | 'degraded' | 'major'
+
+const STATUS_ICON: Record<UptimeStatus, typeof CheckCircle2> = {
+  operational: CheckCircle2,
+  minor: Activity,
+  degraded: AlertCircle,
+  major: AlertCircle,
+}
+
+const STATUS_COLOUR: Record<UptimeStatus, string> = {
+  operational: 'text-emerald-600 dark:text-emerald-400',
+  minor: 'text-emerald-600 dark:text-emerald-400',
+  degraded: 'text-amber-600 dark:text-amber-400',
+  major: 'text-rose-600 dark:text-rose-400',
+}
+
+function getStatusLabel(status: UptimeStatus, t: TFunction): string {
+  if (status === 'operational') return t('All systems operational')
+  if (status === 'minor') return t('Minor blips in the last 30 days')
+  if (status === 'degraded') return t('Degraded performance recently')
+  return t('Significant outages detected')
+}
+
 export function UptimeStatusRow(props: {
   series: UptimeDayPoint[]
   className?: string
 }) {
   const { t } = useTranslation()
   const summary = useMemo(() => aggregateUptime(props.series), [props.series])
-  const status = useMemo(() => {
+  const status = useMemo<UptimeStatus>(() => {
     if (summary.uptime_pct >= 99.9) return 'operational'
     if (summary.uptime_pct >= 99.0) return 'minor'
     if (summary.uptime_pct >= 95.0) return 'degraded'
     return 'major'
   }, [summary.uptime_pct])
 
-  const StatusIcon =
-    status === 'operational'
-      ? CheckCircle2
-      : status === 'minor'
-        ? Activity
-        : AlertCircle
-
-  const statusColour =
-    status === 'operational'
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : status === 'minor'
-        ? 'text-emerald-600 dark:text-emerald-400'
-        : status === 'degraded'
-          ? 'text-amber-600 dark:text-amber-400'
-          : 'text-rose-600 dark:text-rose-400'
-
-  const statusLabel =
-    status === 'operational'
-      ? t('All systems operational')
-      : status === 'minor'
-        ? t('Minor blips in the last 30 days')
-        : status === 'degraded'
-          ? t('Degraded performance recently')
-          : t('Significant outages detected')
+  const StatusIcon = STATUS_ICON[status]
+  const statusColour = STATUS_COLOUR[status]
+  const statusLabel = getStatusLabel(status, t)
 
   return (
     <div

@@ -315,8 +315,7 @@ export function buildGroupPerformance(model: PricingModel): GroupPerformance[] {
   const spec = PROFILE_SPECS[profile]
   const baseSeed = hashStringToSeed(model.model_name)
 
-  return targets
-    .slice()
+  return [...targets]
     .sort((a, b) => a.localeCompare(b))
     .map<GroupPerformance>((group) => {
       const rand = seededRandom(baseSeed ^ hashStringToSeed(group))
@@ -805,6 +804,14 @@ export type RateLimit = {
   rpd: number
 }
 
+type RateLimitBase = { baseRpm: number; baseTpm: number; baseRpd: number }
+
+function rateLimitBaseFor(isHeavy: boolean, isLight: boolean): RateLimitBase {
+  if (isHeavy) return { baseRpm: 60, baseTpm: 0, baseRpd: 1_000 }
+  if (isLight) return { baseRpm: 5_000, baseTpm: 1_000_000, baseRpd: 100_000 }
+  return { baseRpm: 500, baseTpm: 200_000, baseRpd: 10_000 }
+}
+
 /** Build per-group RPM / TPM / RPD limits for the model. */
 export function buildRateLimits(model: PricingModel): RateLimit[] {
   const groups = (model.enable_groups ?? []).filter((g) => g && g !== 'auto')
@@ -813,12 +820,9 @@ export function buildRateLimits(model: PricingModel): RateLimit[] {
   const baseSeed = hashStringToSeed(`${model.model_name}:rl`)
   const isHeavy = cat === 'image' || cat === 'video'
   const isLight = cat === 'embedding'
-  const baseRpm = isHeavy ? 60 : isLight ? 5_000 : 500
-  const baseTpm = isHeavy ? 0 : isLight ? 1_000_000 : 200_000
-  const baseRpd = isHeavy ? 1_000 : isLight ? 100_000 : 10_000
+  const { baseRpm, baseTpm, baseRpd } = rateLimitBaseFor(isHeavy, isLight)
 
-  return targets
-    .slice()
+  return [...targets]
     .sort((a, b) => a.localeCompare(b))
     .map((group) => {
       const rand = seededRandom(baseSeed ^ hashStringToSeed(group))
@@ -836,7 +840,8 @@ export function buildRateLimits(model: PricingModel): RateLimit[] {
 export function formatRateLimit(value: number): string {
   if (value <= 0) return '—'
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000)
+  if (value >= 1_000) {
     return `${(value / 1_000).toFixed(value >= 10_000 ? 0 : 1)}K`
+  }
   return value.toLocaleString()
 }

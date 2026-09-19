@@ -254,7 +254,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   }
 
   return (
-    <Card className='hover:ring-foreground/20 h-full min-w-0 gap-3 transition-colors'>
+    <Card className='bg-card hover:border-foreground/15 hover:bg-card h-full min-w-0 gap-3 transition-colors'>
       <CardHeader className='flex flex-row items-start gap-3'>
         <div
           aria-hidden
@@ -268,7 +268,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         </div>
         <div className='min-w-0 flex-1'>
           <h3
-            className='line-clamp-2 font-mono text-[15px] leading-snug font-semibold [overflow-wrap:anywhere]'
+            className='line-clamp-2 font-sans text-[15px] leading-snug font-semibold tracking-tight [overflow-wrap:anywhere]'
             title={props.model.model_name}
           >
             {props.model.model_name}
@@ -291,7 +291,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       </CardHeader>
       <CardContent className='flex flex-1 flex-col gap-3'>
         <div className='flex min-w-0 flex-col gap-1.5'>
-          <p className='text-muted-foreground line-clamp-2 text-[13px] leading-5 break-words'>
+          <p className='text-foreground/65 line-clamp-2 text-xs leading-5 break-words'>
             {props.model.description || t('No description available.')}
           </p>
           {tags.length > 0 && (

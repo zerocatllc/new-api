@@ -16,12 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export { AnnouncementBanner } from './sections/announcement-banner'
-export { CodeShowcase } from './sections/code-showcase'
-export { Hero } from './sections/hero'
-export { HeroSlideshow } from './sections/hero-slideshow'
-export { LatestModels } from './sections/latest-models'
-export { ProviderMarquee } from './sections/provider-marquee'
-export { Stats } from './sections/stats'
-export { Testimonials } from './sections/testimonials'
-export { WhyChooseUs } from './sections/why-choose-us'
+import { SignalLanding } from './signal-landing'
+
+import './landing-motion.css'
+
+type LandingExperienceProps = {
+  isAuthenticated: boolean
+}
+
+export function LandingExperience(props: LandingExperienceProps) {
+  return <SignalLanding isAuthenticated={props.isAuthenticated} />
+}

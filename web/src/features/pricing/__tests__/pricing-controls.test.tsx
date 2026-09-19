@@ -59,6 +59,14 @@ function toolbarProps(): PricingToolbarProps {
 }
 
 describe('pricing controls', () => {
+  it('keeps price mode and token unit controls available on mobile', () => {
+    render(<PricingToolbar {...toolbarProps()} />)
+
+    for (const name of ['Standard', 'Recharge', '/1M', '/1K']) {
+      expect(screen.getByRole('button', { name }).closest('.hidden')).toBeNull()
+    }
+  })
+
   it('changes the token unit and keeps the selected unit pressed when clicked again', async () => {
     const props = toolbarProps()
     const user = userEvent.setup()

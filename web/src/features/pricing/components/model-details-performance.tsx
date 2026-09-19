@@ -258,6 +258,7 @@ export function ModelDetailsPerformance(props: { model: PricingModel }) {
         />
         <StaticDataTable
           className='rounded-lg'
+          mobileCards
           tableClassName='text-sm'
           headerRowClassName={tableStyles.compactHeaderRow}
           data={performances}

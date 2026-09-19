@@ -16,8 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useQuery } from '@tanstack/react-query'
 import { useRef, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+
+import { getHomeStats } from '../../api'
 
 interface CounterProps {
   end: number
@@ -97,24 +100,48 @@ interface StatItem {
 export function Stats(_props: StatsProps) {
   const { t } = useTranslation()
 
+  // Counts are driven by live backend data (never hardcoded). While the query
+  // is loading, placeholder zeros keep the layout stable; the counter animates
+  // once real values arrive.
+  const { data, isError } = useQuery({
+    queryKey: ['home-stats'],
+    queryFn: getHomeStats,
+    staleTime: 5 * 60 * 1000,
+  })
+  // A failed stats fetch must not masquerade as real zeros.
+  const unavailable = isError && !data
+
   const stats: StatItem[] = [
-    { end: 50, suffix: '+', label: t('upstream services integrated') },
-    { end: 100, suffix: '+', label: t('model billing support') },
-    { end: 50, suffix: '+', label: t('compatible API routes') },
-    { end: 10, suffix: '+', label: t('scheduling controls') },
+    { end: data?.models ?? 0, suffix: '+', label: t('AI Models') },
+    { end: data?.providers ?? 0, suffix: '+', label: t('AI Providers') },
+    {
+      end: data?.uptimePct ?? 0,
+      suffix: '%',
+      label: t('Uptime SLA'),
+      decimals: 1,
+    },
   ]
 
   return (
-    <div className='border-border/40 bg-muted/10 relative z-10 border-y'>
-      <div className='mx-auto max-w-6xl px-6 py-10 md:py-12'>
-        <div className='grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12'>
+    <div className='relative z-10'>
+      <div className='w-full px-6 py-10 md:px-8 md:py-12'>
+        <div className='grid grid-cols-3 gap-8 md:gap-12'>
           {stats.map((s) => (
             <div
               key={s.label}
               className='flex flex-col items-center text-center'
             >
-              <span className='text-2xl font-bold tracking-tight md:text-3xl'>
-                <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
+              <span className='font-serif text-4xl font-normal tracking-tight md:text-5xl'>
+                {unavailable ? (
+                  <span aria-label={t('Unavailable')}>&mdash;</span>
+                ) : (
+                  <Counter
+                    key={`${s.label}-${s.end}`}
+                    end={s.end}
+                    suffix={s.suffix}
+                    decimals={s.decimals}
+                  />
+                )}
               </span>
               <span className='text-muted-foreground mt-1.5 text-xs'>
                 {s.label}

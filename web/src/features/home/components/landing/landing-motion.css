@@ -1,0 +1,181 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+:root {
+  --landing-motion-fast: 250ms;
+  --landing-motion-medium: 500ms;
+  --landing-motion-slow: 800ms;
+  --landing-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-reveal {
+  animation: landing-reveal var(--landing-motion-slow)
+    var(--landing-motion-ease) both;
+}
+
+.landing-motion-surface {
+  --landing-pointer-x: 0;
+  --landing-pointer-y: 0;
+  perspective: 1200px;
+}
+
+.landing-motion-card {
+  transform: rotateX(calc(var(--landing-pointer-y) * -1.4deg))
+    rotateY(calc(var(--landing-pointer-x) * 2deg));
+  transform-style: preserve-3d;
+  transition: transform var(--landing-motion-medium) var(--landing-motion-ease);
+  will-change: transform;
+}
+
+.landing-mountain-relief {
+  filter: saturate(0.45) sepia(0.06) brightness(1.08) contrast(0.9)
+    drop-shadow(0 18px 24px rgb(72 56 43 / 10%));
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 7%,
+    #000 78%,
+    transparent 100%
+  );
+  transform: translate3d(
+    calc(var(--landing-pointer-x) * -7px),
+    calc(var(--landing-pointer-y) * -4px),
+    28px
+  );
+  transform-origin: 52% 82%;
+  transition: transform var(--landing-motion-medium) var(--landing-motion-ease);
+  will-change: transform;
+}
+
+.landing-routing-node {
+  transform: translateZ(52px);
+}
+
+.landing-routing-node-pulse {
+  animation: landing-routing-node-pulse 2.6s ease-out infinite;
+}
+
+.landing-signal-flow {
+  stroke-dasharray: 5 7;
+  animation: landing-signal-dash 2.2s linear infinite;
+}
+
+.landing-signal-flow--request {
+  stroke-dasharray: none;
+  animation: none;
+}
+
+.landing-signal-particle {
+  offset-path: path('M 0 0 C 46 0 76 0 114 0');
+  animation: landing-signal-particle 3.4s var(--landing-motion-ease) infinite;
+  box-shadow:
+    0 0 0 5px rgb(237 91 32 / 10%),
+    0 0 14px rgb(237 91 32 / 55%);
+}
+
+.landing-provider-card,
+.landing-hover-lift {
+  transition:
+    transform var(--landing-motion-fast) var(--landing-motion-ease),
+    border-color var(--landing-motion-fast) ease,
+    box-shadow var(--landing-motion-fast) var(--landing-motion-ease);
+}
+
+.landing-provider-card:hover {
+  transform: translateX(-6px) scale(1.015);
+  box-shadow: 0 16px 36px rgb(77 48 29 / 12%);
+}
+
+.landing-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgb(31 50 68 / 10%);
+}
+
+@keyframes landing-reveal {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-signal-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes landing-signal-particle {
+  0%,
+  14% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  24%,
+  82% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes landing-routing-node-pulse {
+  0%,
+  34% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  58% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal,
+  .landing-routing-node-pulse,
+  .landing-signal-flow,
+  .landing-signal-particle {
+    animation: none;
+  }
+
+  .landing-reveal {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  .landing-motion-card,
+  .landing-mountain-relief,
+  .landing-provider-card,
+  .landing-hover-lift {
+    transform: none;
+    transition: none;
+  }
+}

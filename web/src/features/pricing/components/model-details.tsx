@@ -300,7 +300,7 @@ function OverviewSummaryGrid(props: { model: PricingModel }) {
       : 0
 
   return (
-    <div className='bg-muted/20 grid overflow-hidden rounded-lg border sm:grid-cols-3 sm:divide-x'>
+    <div className='bg-muted/20 grid grid-cols-3 divide-x overflow-hidden rounded-lg border'>
       <OverviewMetric
         icon={Timer}
         label='TPS'
@@ -623,14 +623,14 @@ function ModelHeader(props: { model: PricingModel }) {
 
   return (
     <header className='pb-4'>
-      <div className='flex items-center gap-2.5'>
-        {modelIcon}
-        <h1 className='font-mono text-xl font-bold tracking-tight sm:text-2xl'>
+      <div className='flex min-w-0 items-center gap-2.5'>
+        {modelIcon && <span className='shrink-0'>{modelIcon}</span>}
+        <h1 className='min-w-0 flex-1 truncate font-mono text-xl font-bold tracking-tight sm:text-2xl'>
           {model.model_name}
         </h1>
         <CopyButton
           value={model.model_name || ''}
-          className='size-6'
+          className='size-6 shrink-0'
           iconClassName='size-3'
           tooltip={t('Copy model name')}
           successTooltip={t('Copied!')}
@@ -1217,6 +1217,7 @@ function ProviderGroupPricingSection(
                 </div>
                 <StaticDataTable
                   className='rounded-none border-0'
+                  mobileCards
                   tableClassName='text-sm'
                   headerRowClassName='hover:bg-transparent'
                   data={dynamicTiers}
@@ -1391,6 +1392,7 @@ function ProviderGroupPricingSection(
       <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
       <StaticDataTable
         className='-mx-4 rounded-none border-0 sm:mx-0'
+        mobileCards
         tableClassName='text-sm'
         headerRowClassName='hover:bg-transparent'
         data={availableGroups}
@@ -1591,9 +1593,7 @@ export function ModelDetailsDrawer(props: ModelDetailsDrawerProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side='right'
-        className={sideDrawerContentClassName(
-          'sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl'
-        )}
+        className={sideDrawerContentClassName('sm:max-w-xl lg:max-w-2xl')}
       >
         <SheetHeader className='sr-only'>
           <SheetTitle>{props.model.model_name}</SheetTitle>
